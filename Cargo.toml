@@ -8,6 +8,8 @@ name = "factory_calculator"
 path = "src/lib.rs"
 
 [dependencies]
-good_lp = { version = "1.12.0", feature = "clarabel" }
+good_lp = { version = "1.12.0", features = [
+    "clarabel",
+], default-features = false }
 strum = "0.27.1"
 strum_macros = "0.27.1"
