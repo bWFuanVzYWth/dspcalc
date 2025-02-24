@@ -1,0 +1,13 @@
+[package]
+name = "factory_calculator"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "factory_calculator"
+path = "src/lib.rs"
+
+[dependencies]
+good_lp = { version = "1.12.0", feature = "clarabel" }
+strum = "0.27.1"
+strum_macros = "0.27.1"
