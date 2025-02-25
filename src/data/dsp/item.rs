@@ -1,5 +1,6 @@
 use strum_macros::{Display, EnumCount, EnumIter, EnumString};
 
+// TODO 英文的类型别名
 #[derive(Debug, EnumIter, EnumString, EnumCount, Display, Clone, Eq, PartialEq, Hash)]
 pub enum Item {
     地基 = 1131,
@@ -175,17 +176,13 @@ pub enum Item {
     沙土 = 1099,
 }
 
-struct DirectResources {
-    item: Item, // 物品种类
-    point: i64, // 增产点数
-}
-
-enum IndirectResources {
+pub enum IndirectResource {
     Power,
     Area,
+    Time,
 }
 
-enum Resources {
-    Indirect(IndirectResources),
-    Direct(DirectResources),
+pub enum Resource {
+    Direct(Item),
+    Indirect(IndirectResource),
 }
