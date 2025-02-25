@@ -22,31 +22,9 @@ fn cost(vars: &HashMap<&Cargo, Variable>) -> Expression {
 
 // TODO 传入需求、约束
 fn tmp() -> Result<clarabel::ClarabelSolution, good_lp::solvers::ResolutionError> {
-    // 根据需要求解的问题，创建包含了所有相关物品的扁平化列表
-    let cargos = Item::iter()
-        .map(|item| {
-            [0, 1, 2, 4] // 增产点数
-                .iter()
-                .map(|point| Cargo {
-                    item: item.clone(),
-                    point: *point,
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>()
-        .concat();
+    // 生成扁平化的广义合成公式列表，并对每个公式分配一个决策变量
 
-    // 在求解器中声明物品，并返回物品在求解器中的引用
-    let mut problem = ProblemVariables::new();
-    let vars = cargos
-        .iter()
-        .map(|cargo| (cargo, problem.add(variable().name(cargo.item.to_string()))))
-        .collect::<HashMap<_, _>>();
+    todo!()
 
-    // 给问题建模
-    let mut model = problem.minimise(cost(&vars)).using(clarabel);
-
-    // TODO 根据合成公式创建所有约束
-
-    model.solve()
+    // model.solve()
 }
