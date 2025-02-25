@@ -11,6 +11,7 @@ pub struct Cargo {
 pub struct Recipe<'a> {
     pub resources: &'a [Cargo],
     pub products: &'a [Cargo],
+    pub only_speed_up: bool,
 }
 
 pub const BASIC_RECIPES: &[Recipe] = &[
@@ -29,6 +30,7 @@ pub const BASIC_RECIPES: &[Recipe] = &[
             resource: Direct(高能石墨),
             num: 1.0,
         }],
+        only_speed_up: false,
     },
     Recipe {
         resources: &[
@@ -55,6 +57,7 @@ pub const BASIC_RECIPES: &[Recipe] = &[
                 num: 1.0,
             },
         ],
+        only_speed_up: true,
     },
     Recipe {
         resources: &[
@@ -79,5 +82,6 @@ pub const BASIC_RECIPES: &[Recipe] = &[
             resource: Direct(精炼油),
             num: 3.0,
         }],
+        only_speed_up: true,
     },
 ];
