@@ -18,16 +18,16 @@ fn recipes_speed_up(basic_recipe: &BasicRecipe) -> Vec<Recipe> {
 
 fn increase_production_scale(point: u64) -> f64 {
     match point {
-        0 => 1.0,
         1 => 1.125,
         2 => 1.2,
-        3 => todo!(),
+        3 => 1.225,
         4 => 1.25,
         _ => panic!("unsupported point: {}", point),
     }
 }
 
 // TODO 把喷涂增产剂视为单独的公式
+// TODO 耗电量
 
 fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     Recipe {
@@ -71,36 +71,26 @@ fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     }
 }
 
-fn recipes_increase_production(basic_recipe: &BasicRecipe) -> Option<Vec<Recipe>> {
+fn recipes_increase_production(receipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
     if basic_recipe.increase_production {
-        Some(vec![
-            increase_production(basic_recipe, 1),
-            increase_production(basic_recipe, 2),
-            increase_production(basic_recipe, 4),
-        ])
-    } else {
-        None
+        receipes.push(increase_production(basic_recipe, 1));
+        receipes.push(increase_production(basic_recipe, 2));
+        receipes.push(increase_production(basic_recipe, 3));
+        receipes.push(increase_production(basic_recipe, 4));
     }
 }
 
 pub fn receipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
-    basic_recipes
-        .iter()
-        .map(|basic_recipe| {
-            [
-                // 基础公式
-                vec![Recipe { // TODO 拆分
-                    resources: basic_recipe.resources.to_vec(),
-                    products: basic_recipe.products.to_vec(),
-                }],
-                // TODO 加速
-                // 增产
-                recipes_increase_production(basic_recipe).unwrap_or(Vec::new()),
-            ]
-            .concat()
-        })
-        .collect::<Vec<_>>()
-        .concat()
+    let mut receipes = Vec::new();
+    basic_recipes.iter().for_each(|basic_recipe| {
+        receipes.push(Recipe {
+            // TODO 拆分
+            resources: basic_recipe.resources.to_vec(),
+            products: basic_recipe.products.to_vec(),
+        });
+        recipes_increase_production(&mut receipes, basic_recipe);
+    });
+    receipes
 }
 
 pub struct BasicRecipe<'a> {
