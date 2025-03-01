@@ -1,15 +1,10 @@
-use crate::data::dsp::{item::Item, recipe::{Recipe, BASIC_RECIPES}};
+use crate::data::dsp::{item::Item, recipe::{BasicRecipe, BASIC_RECIPES}};
 use good_lp::{
     clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Solution, SolverModel,
 };
 use strum::IntoEnumIterator;
 
-// TODO 根据基础公式生成扁平化的广义公式（带增产剂和耗电的），需要是const
-const RECIPE:&[Recipe] = {
-    BASIC_RECIPES.iter().map(|basic_recipe|{
-        
-    })
-};
+// TODO 根据基础公式生成扁平化的广义公式（带增产剂和耗电的）
 
 // TODO 根据公式表生成约束
 // 对每一种物品，生产必须大于需求

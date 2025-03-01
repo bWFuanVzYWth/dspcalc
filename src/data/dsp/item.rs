@@ -176,13 +176,57 @@ pub enum Item {
     沙土 = 1099,
 }
 
+#[derive(Clone)]
 pub enum IndirectResource {
     Power,
     Area,
     Time,
 }
 
-pub enum Resource {
-    Direct(Item),
+#[derive(Clone)]
+pub struct Cargo {
+    pub item: Item,
+    pub point: u64,
+}
+
+#[derive(Clone)]
+pub enum ResourceType {
+    Direct(Cargo),
     Indirect(IndirectResource),
+}
+
+#[derive(Clone)]
+pub struct Resource {
+    pub resource_type: ResourceType,
+    pub num: f64,
+}
+
+impl Resource {
+    pub const fn from_item(item: Item, num: f64) -> Self {
+        Resource {
+            resource_type: ResourceType::Direct(Cargo { item, point: 0 }),
+            num,
+        }
+    }
+
+    pub const fn time(num: f64) -> Self {
+        Resource {
+            resource_type: ResourceType::Indirect(IndirectResource::Time),
+            num,
+        }
+    }
+
+    pub const fn area(num: f64) -> Self {
+        Resource {
+            resource_type: ResourceType::Indirect(IndirectResource::Area),
+            num,
+        }
+    }
+
+    pub const fn power(num: f64) -> Self {
+        Resource {
+            resource_type: ResourceType::Indirect(IndirectResource::Power),
+            num,
+        }
+    }
 }

@@ -1,87 +1,144 @@
-use super::{
-    item::{IndirectResource::*, Item::*, Resource},
-    recipe::Resource::{Direct, Indirect},
+use crate::data::dsp::item::{Cargo, IndirectResource};
+
+use super::item::{
+    Item::*,
+    Resource,
+    ResourceType::{Direct, Indirect},
 };
 
-pub struct Cargo {
-    pub resource: Resource,
-    pub num: f64,
+#[derive(Clone)]
+pub struct Recipe {
+    pub resources: Vec<Resource>,
+    pub products: Vec<Resource>,
 }
 
-pub struct Recipe<'a> {
-    pub resources: &'a [Cargo],
-    pub products: &'a [Cargo],
-    pub only_speed_up: bool,
+fn recipes_speed_up(basic_recipe: &BasicRecipe) -> Vec<Recipe> {
+    todo!()
 }
 
-pub const BASIC_RECIPES: &[Recipe] = &[
+fn increase_production_scale(point: u64) -> f64 {
+    match point {
+        0 => 1.0,
+        1 => 1.125,
+        2 => 1.2,
+        3 => todo!(),
+        4 => 1.25,
+        _ => panic!("unsupported point: {}", point),
+    }
+}
+
+// TODO 把喷涂增产剂视为单独的公式
+
+fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     Recipe {
-        resources: &[
-            Cargo {
-                resource: Direct(煤矿),
-                num: 2.0,
-            },
-            Cargo {
-                resource: Indirect(Time),
-                num: 2.0,
-            },
-        ],
-        products: &[Cargo {
-            resource: Direct(高能石墨),
-            num: 1.0,
-        }],
-        only_speed_up: false,
+        // 为所有原料喷涂增产剂
+        resources: basic_recipe
+            .resources
+            .iter()
+            .map(|resource| match &resource.resource_type {
+                Direct(cargo) => Resource {
+                    resource_type: Direct(Cargo {
+                        item: cargo.item.clone(),
+                        point,
+                    }),
+                    num: resource.num,
+                },
+                Indirect(_) => resource.clone(),
+            })
+            .collect(),
+
+        // 增产
+        products: basic_recipe
+            .products
+            .iter()
+            .map(|product| match &product.resource_type {
+                Direct(cargo) => Resource {
+                    resource_type: Direct(Cargo {
+                        item: cargo.item.clone(),
+                        point,
+                    }),
+                    num: increase_production_scale(point) * product.num,
+                },
+                Indirect(indirect) => match indirect {
+                    IndirectResource::Power => Resource {
+                        resource_type: Indirect(IndirectResource::Power),
+                        num: increase_production_scale(point) * product.num,
+                    },
+                    _ => product.clone(),
+                },
+            })
+            .collect(),
+    }
+}
+
+fn recipes_increase_production(basic_recipe: &BasicRecipe) -> Option<Vec<Recipe>> {
+    if basic_recipe.increase_production {
+        Some(vec![
+            increase_production(basic_recipe, 1),
+            increase_production(basic_recipe, 2),
+            increase_production(basic_recipe, 4),
+        ])
+    } else {
+        None
+    }
+}
+
+pub fn receipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
+    basic_recipes
+        .iter()
+        .map(|basic_recipe| {
+            [
+                // 基础公式
+                vec![Recipe { // TODO 拆分
+                    resources: basic_recipe.resources.to_vec(),
+                    products: basic_recipe.products.to_vec(),
+                }],
+                // TODO 加速
+                // 增产
+                recipes_increase_production(basic_recipe).unwrap_or(Vec::new()),
+            ]
+            .concat()
+        })
+        .collect::<Vec<_>>()
+        .concat()
+}
+
+pub struct BasicRecipe<'a> {
+    pub resources: &'a [Resource],
+    pub products: &'a [Resource],
+    pub speed_up: bool,
+    pub increase_production: bool,
+}
+
+pub const BASIC_RECIPES: &[BasicRecipe] = &[
+    BasicRecipe {
+        resources: &[Resource::from_item(煤矿, 2.0), Resource::time(2.0)],
+        products: &[Resource::from_item(高能石墨, 1.0)],
+        speed_up: true,
+        increase_production: true,
     },
-    Recipe {
+    BasicRecipe {
         resources: &[
-            Cargo {
-                resource: Direct(精炼油),
-                num: 1.0,
-            },
-            Cargo {
-                resource: Direct(氢),
-                num: 2.0,
-            },
-            Cargo {
-                resource: Indirect(Time),
-                num: 4.0,
-            },
+            Resource::from_item(精炼油, 1.0),
+            Resource::from_item(氢, 2.0),
+            Resource::time(4.0),
         ],
         products: &[
-            Cargo {
-                resource: Direct(氢),
-                num: 3.0,
-            },
-            Cargo {
-                resource: Direct(高能石墨),
-                num: 1.0,
-            },
+            Resource::from_item(氢, 3.0),
+            Resource::from_item(高能石墨, 1.0),
         ],
-        only_speed_up: true,
+        speed_up: true,
+        increase_production: false,
     },
-    Recipe {
+    BasicRecipe {
         resources: &[
-            Cargo {
-                resource: Direct(精炼油),
-                num: 2.0,
-            },
-            Cargo {
-                resource: Direct(氢),
-                num: 1.0,
-            },
-            Cargo {
-                resource: Direct(煤矿),
-                num: 1.0,
-            },
-            Cargo {
-                resource: Indirect(Time),
-                num: 4.0,
-            },
+            Resource::from_item(精炼油, 2.0),
+            Resource::from_item(氢, 1.0),
+            Resource::from_item(煤矿, 1.0),
+            Resource::time(4.0),
         ],
-        products: &[Cargo {
-            resource: Direct(精炼油),
-            num: 3.0,
-        }],
-        only_speed_up: true,
+        products: &[Resource::from_item(精炼油, 3.0)],
+        speed_up: true,
+        increase_production: false,
     },
 ];
