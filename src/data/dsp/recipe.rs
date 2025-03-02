@@ -1,7 +1,7 @@
 use crate::data::dsp::item::{Cargo, IndirectResource};
 
 use super::item::{
-    Item::*,
+    Item::{self, *},
     Resource,
     ResourceType::{Direct, Indirect},
 };
@@ -12,6 +12,7 @@ pub struct Recipe {
     pub products: Vec<Resource>,
 }
 
+// TODO 看看游戏源代码，检查是否有更优雅的写法
 const fn speed_up_scale(point: u64) -> f64 {
     match point {
         1 => 1.0 / 1.25,
@@ -67,7 +68,7 @@ const fn increase_production_scale(point: u64) -> f64 {
 
 // TODO 把喷涂增产剂视为单独的公式
 // TODO 耗电量
-// TODO 拆分
+// TODO 拆分过大的函数
 
 fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     Recipe {
@@ -127,7 +128,8 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
     });
 }
 
-pub fn receipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
+// TODO 增产喷涂公式
+pub fn recipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
     basic_recipes.iter().for_each(|basic_recipe| {
         recipe_vanilla(&mut recipes, basic_recipe);
@@ -145,6 +147,55 @@ pub struct BasicRecipe<'a> {
 }
 
 pub const BASIC_RECIPES: &[BasicRecipe] = &[
+    // 采矿
+    BasicRecipe {
+        resources: &[Resource::time(1.0)],
+        products: &[Resource::from_item(煤矿, 1.0)],
+        speed_up: false,
+        increase_production: false,
+    },
+    // 喷涂
+    BasicRecipe {
+        resources: &[
+            Resource::from_item(煤矿, 4.0),
+            Resource::from_item_point(增产剂mk3, 4, 4.0 / 75.0),
+            Resource::time(1.0 / 30.0),
+        ],
+        products: &[Resource::from_item_point(煤矿, 4, 4.0)],
+        speed_up: false,
+        increase_production: false,
+    },
+    BasicRecipe {
+        resources: &[
+            Resource::from_item(煤矿, 4.0),
+            Resource::from_item_point(增产剂mk3, 4, 3.0 / 75.0),
+            Resource::time(1.0 / 30.0),
+        ],
+        products: &[Resource::from_item_point(煤矿, 3, 4.0)],
+        speed_up: false,
+        increase_production: false,
+    },
+    BasicRecipe {
+        resources: &[
+            Resource::from_item(煤矿, 4.0),
+            Resource::from_item_point(增产剂mk3, 4, 2.0 / 75.0),
+            Resource::time(1.0 / 30.0),
+        ],
+        products: &[Resource::from_item_point(煤矿, 2, 4.0)],
+        speed_up: false,
+        increase_production: false,
+    },
+    BasicRecipe {
+        resources: &[
+            Resource::from_item(煤矿, 1.0),
+            Resource::from_item_point(增产剂mk3, 4, 1.0 / 75.0),
+            Resource::time(1.0 / 30.0),
+        ],
+        products: &[Resource::from_item_point(煤矿, 1, 4.0)],
+        speed_up: false,
+        increase_production: false,
+    },
+    // 生产
     BasicRecipe {
         resources: &[Resource::from_item(煤矿, 2.0), Resource::time(2.0)],
         products: &[Resource::from_item(高能石墨, 1.0)],

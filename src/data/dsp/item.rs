@@ -1,3 +1,4 @@
+use num::rational::Rational64;
 use strum_macros::{Display, EnumCount, EnumIter, EnumString};
 
 // TODO 英文的类型别名
@@ -175,20 +176,20 @@ pub enum Item {
     宇宙矩阵 = 6006,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IndirectResource {
     Power,
     Area,
     Time,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Cargo {
     pub item: Item,
     pub point: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum ResourceType {
     Direct(Cargo),
     Indirect(IndirectResource),
@@ -204,6 +205,13 @@ impl Resource {
     pub const fn from_item(item: Item, num: f64) -> Self {
         Resource {
             resource_type: ResourceType::Direct(Cargo { item, point: 0 }),
+            num,
+        }
+    }
+
+    pub const fn from_item_point(item: Item, point: u64, num: f64) -> Self {
+        Resource {
+            resource_type: ResourceType::Direct(Cargo { item, point: point }),
             num,
         }
     }
