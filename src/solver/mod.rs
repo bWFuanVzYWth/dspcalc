@@ -9,47 +9,40 @@ use good_lp::{
     SolverModel, Variable,
 };
 
-// 对每一种物品，生产必须大于需求
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
     recipe_vars: &HashMap<usize, Variable>,
 ) {
+    // 辅助函数：生成单个配方的表达式项
+    fn recipe_term(
+        (i, recipe): (usize, &Recipe),
+        production: &ResourceType,
+        recipe_vars: &HashMap<usize, Variable>,
+        resource_accessor: fn(&Recipe) -> &[Resource],
+    ) -> Option<Expression> {
+        let resources = resource_accessor(recipe);
+        resources
+            .iter()
+            .find(|res| res.resource_type == *production)
+            .map(|_| recipe_vars[&i] * stack(resources, production) / time(recipe))
+    }
+
     all_productions.iter().for_each(|production| {
-        // 对每种产品
-        // 找出所有生产它的公式，分别计算单位时间产能
-        let constraint_production = recipes
+        let production_expr: Expression = recipes
             .iter()
             .enumerate()
-            .filter(|(_, recipe)| {
-                recipe
-                    .products
-                    .iter()
-                    .any(|resource| resource.resource_type == *production)
-            })
-            .map(|(i, recipe)| {
-                let var = recipe_vars.get(&i).unwrap();
-                *var * stack(&recipe.products, production) / time(recipe)
-            })
-            .sum::<Expression>();
+            .filter_map(|item| recipe_term(item, production, recipe_vars, |r| &r.products))
+            .sum();
 
-        let constraint_resource = recipes
+        let resource_expr: Expression = recipes
             .iter()
             .enumerate()
-            .filter(|(_, recipe)| {
-                recipe
-                    .resources
-                    .iter()
-                    .any(|resource| resource.resource_type == *production)
-            })
-            .map(|(i, recipe)| {
-                let var = recipe_vars.get(&i).unwrap();
-                *var * stack(&recipe.resources, production) / time(recipe)
-            })
-            .sum::<Expression>();
+            .filter_map(|item| recipe_term(item, production, recipe_vars, |r| &r.resources))
+            .sum();
 
-        problem.add_constraint(dbg!(constraint_production.geq(constraint_resource)));
+        problem.add_constraint(production_expr.geq(resource_expr));
     });
 }
 
