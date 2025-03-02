@@ -173,29 +173,28 @@ pub enum Item {
     信息矩阵 = 6004,
     引力矩阵 = 6005,
     宇宙矩阵 = 6006,
-    沙土 = 1099,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum IndirectResource {
     Power,
     Area,
     Time,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Cargo {
     pub item: Item,
     pub point: u64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ResourceType {
     Direct(Cargo),
     Indirect(IndirectResource),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Resource {
     pub resource_type: ResourceType,
     pub num: f64,

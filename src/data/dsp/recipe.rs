@@ -6,28 +6,68 @@ use super::item::{
     ResourceType::{Direct, Indirect},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Recipe {
     pub resources: Vec<Resource>,
     pub products: Vec<Resource>,
 }
 
-fn recipes_speed_up(basic_recipe: &BasicRecipe) -> Vec<Recipe> {
-    todo!()
+const fn speed_up_scale(point: u64) -> f64 {
+    match point {
+        1 => 1.0 / 1.25,
+        2 => 1.0 / 1.5,
+        3 => 1.0 / 1.75,
+        4 => 1.0 / 2.0,
+        _ => 1.0 / 1.0,
+    }
 }
 
-fn increase_production_scale(point: u64) -> f64 {
+fn speed_up(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
+    Recipe {
+        resources: basic_recipe
+            .resources
+            .iter()
+            .map(|resource| match &resource.resource_type {
+                Direct(cargo) => Resource {
+                    resource_type: Direct(Cargo {
+                        item: cargo.item.clone(),
+                        point,
+                    }),
+                    num: resource.num,
+                },
+                Indirect(indirect_resource) => match indirect_resource {
+                    IndirectResource::Time => Resource::time(resource.num * speed_up_scale(point)),
+                    _ => resource.clone(),
+                },
+            })
+            .collect(),
+
+        products: basic_recipe.products.to_vec(),
+    }
+}
+
+fn recipes_speed_up(recipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
+    if basic_recipe.speed_up {
+        recipes.push(speed_up(basic_recipe, 1));
+        recipes.push(speed_up(basic_recipe, 2));
+        recipes.push(speed_up(basic_recipe, 3));
+        recipes.push(speed_up(basic_recipe, 4));
+    }
+}
+
+const fn increase_production_scale(point: u64) -> f64 {
     match point {
         1 => 1.125,
         2 => 1.2,
         3 => 1.225,
         4 => 1.25,
-        _ => panic!("unsupported point: {}", point),
+        _ => 1.0,
     }
 }
 
 // TODO 把喷涂增产剂视为单独的公式
 // TODO 耗电量
+// TODO 拆分
 
 fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     Recipe {
@@ -71,26 +111,30 @@ fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     }
 }
 
-fn recipes_increase_production(receipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
+fn recipes_increase_production(recipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
     if basic_recipe.increase_production {
-        receipes.push(increase_production(basic_recipe, 1));
-        receipes.push(increase_production(basic_recipe, 2));
-        receipes.push(increase_production(basic_recipe, 3));
-        receipes.push(increase_production(basic_recipe, 4));
+        recipes.push(increase_production(basic_recipe, 1));
+        recipes.push(increase_production(basic_recipe, 2));
+        recipes.push(increase_production(basic_recipe, 3));
+        recipes.push(increase_production(basic_recipe, 4));
     }
 }
 
-pub fn receipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
-    let mut receipes = Vec::new();
-    basic_recipes.iter().for_each(|basic_recipe| {
-        receipes.push(Recipe {
-            // TODO 拆分
-            resources: basic_recipe.resources.to_vec(),
-            products: basic_recipe.products.to_vec(),
-        });
-        recipes_increase_production(&mut receipes, basic_recipe);
+fn recipe_vanilla(recipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
+    recipes.push(Recipe {
+        resources: basic_recipe.resources.to_vec(),
+        products: basic_recipe.products.to_vec(),
     });
-    receipes
+}
+
+pub fn receipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
+    let mut recipes = Vec::new();
+    basic_recipes.iter().for_each(|basic_recipe| {
+        recipe_vanilla(&mut recipes, basic_recipe);
+        recipes_increase_production(&mut recipes, basic_recipe);
+        recipes_speed_up(&mut recipes, basic_recipe);
+    });
+    recipes
 }
 
 pub struct BasicRecipe<'a> {
