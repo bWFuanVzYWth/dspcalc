@@ -19,29 +19,30 @@ fn constraint_recipe(
     all_productions.iter().for_each(|production| {
         // 对每种产品
         // 找出所有生产它的公式，分别计算单位时间产能
-        let all_find_production = recipes.iter().enumerate().filter(|(_, recipe)| {
-            recipe
-                .products
-                .iter()
-                .any(|resource| resource.resource_type == *production)
-        });
-
-        // 找出所有需求它的公式，分别计算单位时间需求
-        let all_find_resource = recipes.iter().enumerate().filter(|(_, recipe)| {
-            recipe
-                .resources
-                .iter()
-                .any(|resource| resource.resource_type == *production)
-        });
-
-        let constraint_production = all_find_production
+        let constraint_production = recipes
+            .iter()
+            .enumerate()
+            .filter(|(_, recipe)| {
+                recipe
+                    .products
+                    .iter()
+                    .any(|resource| resource.resource_type == *production)
+            })
             .map(|(i, recipe)| {
                 let var = recipe_vars.get(&i).unwrap();
                 *var * stack(&recipe.products, production) / time(recipe)
             })
             .sum::<Expression>();
 
-        let constraint_resource = all_find_resource
+        let constraint_resource = recipes
+            .iter()
+            .enumerate()
+            .filter(|(_, recipe)| {
+                recipe
+                    .resources
+                    .iter()
+                    .any(|resource| resource.resource_type == *production)
+            })
             .map(|(i, recipe)| {
                 let var = recipe_vars.get(&i).unwrap();
                 *var * stack(&recipe.resources, production) / time(recipe)
@@ -101,9 +102,8 @@ fn stack(resources: &[Resource], resource_type: &ResourceType) -> f64 {
     }
 }
 
-fn proliferator_recipes(
-    all_resources: &HashSet<ResourceType>,
-) -> Vec<Recipe> {
+// TODO 低级喷涂
+fn proliferator_recipes(all_resources: &HashSet<ResourceType>) -> Vec<Recipe> {
     all_resources
         .iter()
         .filter(|resource| match resource {
@@ -148,7 +148,7 @@ pub fn solve() {
     // 定义变量，每个变量代表一个公式的调用次数
     let mut recipe_vars = HashMap::new();
     let mut model = variables!();
-    all_recipes.iter().enumerate().for_each(|(i, recipe)| {
+    all_recipes.iter().enumerate().for_each(|(i, _)| {
         let var = model.add(variable().min(0.0));
         recipe_vars.insert(i, var); // recipes_index -> variables
     });
