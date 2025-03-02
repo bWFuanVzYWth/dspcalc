@@ -1,7 +1,7 @@
 use crate::data::dsp::item::{Cargo, IndirectResource};
 
 use super::item::{
-    Item::{self, *},
+    Item::{*},
     Resource,
     ResourceType::{Direct, Indirect},
 };

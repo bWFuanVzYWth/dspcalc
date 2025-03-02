@@ -1,4 +1,3 @@
-use num::rational::Rational64;
 use strum_macros::{Display, EnumCount, EnumIter, EnumString};
 
 // TODO 英文的类型别名
@@ -211,7 +210,7 @@ impl Resource {
 
     pub const fn from_item_point(item: Item, point: u64, num: f64) -> Self {
         Resource {
-            resource_type: ResourceType::Direct(Cargo { item, point: point }),
+            resource_type: ResourceType::Direct(Cargo { item, point }),
             num,
         }
     }

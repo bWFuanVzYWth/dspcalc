@@ -2,13 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use crate::data::dsp::{
     item::{Cargo, IndirectResource, Item, Resource, ResourceType},
-    recipe::{recipes, BasicRecipe, Recipe, BASIC_RECIPES},
+    recipe::{recipes, Recipe, BASIC_RECIPES},
 };
 use good_lp::{
     clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
     SolverModel, Variable,
 };
-use strum::IntoEnumIterator;
 
 // 对每一种物品，生产必须大于需求
 fn constraint_recipe(
@@ -159,10 +158,10 @@ pub fn solve() {
         item: Item::高能石墨,
         point: 0,
     });
-    assert!(all_productions.contains(&need_type) == true); // 确保待求解的物品存在
+    assert!(all_productions.contains(&need_type)); // 确保待求解的物品存在
     let need_num = 100.0;
 
-    let constraint_need = problem.add_constraint(
+    let _constraint_need = problem.add_constraint(
         recipe_vars
             .iter()
             .map(|(recipes_index, variable)| {
