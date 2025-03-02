@@ -95,16 +95,17 @@ fn time(recipe: &Recipe) -> f64 {
 }
 
 fn stack(resources: &[Resource], resource_type: &ResourceType) -> f64 {
-    match resources.iter().find(|r|{r.resource_type == *resource_type}) {
+    match resources.iter().find(|r| r.resource_type == *resource_type) {
         Some(resource) => resource.num,
-        None => 0.0
+        None => 0.0,
     }
 }
 
-// TODO 看看all_productions能不能删掉
-fn zcj_recipes(all_resources: &HashSet<ResourceType>, all_productions: &HashSet<ResourceType>) -> Vec<Recipe> {
+fn proliferator_recipes(
+    all_resources: &HashSet<ResourceType>,
+) -> Vec<Recipe> {
     all_resources
-        .union(all_productions)
+        .iter()
         .filter(|resource| match resource {
             ResourceType::Direct(cargo) => cargo.point > 0,
             _ => false,
@@ -135,19 +136,14 @@ fn zcj_recipes(all_resources: &HashSet<ResourceType>, all_productions: &HashSet<
 
 // TODO 传入需求和约束，返回求解过程和结果
 pub fn solve() {
-    // 生成所有公式
-    let not_all_recipes = recipes(BASIC_RECIPES);
+    // 展平所有基础公式
+    let flatten_basic_recipes = recipes(BASIC_RECIPES);
     // 找出所有在公式中出现过的资源
-    let all_resources = find_all_resources(&not_all_recipes);
-    let all_productions = find_all_production(&not_all_recipes);
-    let recipes_extra = zcj_recipes(&all_resources, &all_productions);
-    // dbg!(&recipes_extra);
-    // dbg!(&all_productions);
-    let all_recipes = [not_all_recipes, recipes_extra].concat();
-    let all_resources = find_all_resources(&all_recipes);
+    let flatten_basic_resources = find_all_resources(&flatten_basic_recipes);
+    // 生成喷涂公式
+    let proliferator_recipes = proliferator_recipes(&flatten_basic_resources);
+    let all_recipes = [flatten_basic_recipes, proliferator_recipes].concat();
     let all_productions = find_all_production(&all_recipes);
-
-    // dbg!(&all_recipes);
 
     // 定义变量，每个变量代表一个公式的调用次数
     let mut recipe_vars = HashMap::new();
@@ -168,7 +164,7 @@ pub fn solve() {
         item: Item::高能石墨,
         point: 0,
     });
-    assert!(all_productions.contains(&need_type)); // 确保待求解的物品存在
+    assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
     let need_num = 10000.0;
 
     let _constraint_need = problem.add_constraint(
