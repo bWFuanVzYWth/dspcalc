@@ -66,7 +66,6 @@ const fn increase_production_scale(point: u64) -> f64 {
     }
 }
 
-// TODO 把喷涂增产剂视为单独的公式
 // TODO 耗电量
 // TODO 拆分过大的函数
 
@@ -96,7 +95,7 @@ fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
                 Direct(cargo) => Resource {
                     resource_type: Direct(Cargo {
                         item: cargo.item.clone(),
-                        point,
+                        point: 0,
                     }),
                     num: increase_production_scale(point) * product.num,
                 },
@@ -128,7 +127,6 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {
     });
 }
 
-// TODO 增产喷涂公式
 pub fn recipes(basic_recipes: &[BasicRecipe]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
     basic_recipes.iter().for_each(|basic_recipe| {

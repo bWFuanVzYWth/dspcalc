@@ -37,18 +37,18 @@ fn constraint_recipe(
         let constraint_production = all_find_production
             .map(|(i, recipe)| {
                 let var = recipe_vars.get(&i).unwrap();
-                *var / time(recipe)
+                *var * stack(&recipe.products, production) / time(recipe)
             })
             .sum::<Expression>();
 
         let constraint_resource = all_find_resource
             .map(|(i, recipe)| {
                 let var = recipe_vars.get(&i).unwrap();
-                *var / time(recipe)
+                *var * stack(&recipe.resources, production) / time(recipe)
             })
             .sum::<Expression>();
 
-        problem.add_constraint(constraint_production.geq(constraint_resource));
+        problem.add_constraint(dbg!(constraint_production.geq(constraint_resource)));
     });
 }
 
@@ -94,9 +94,17 @@ fn time(recipe: &Recipe) -> f64 {
         .num
 }
 
-fn zcj_recipes(all_resources: &HashSet<ResourceType>) -> Vec<Recipe> {
+fn stack(resources: &[Resource], resource_type: &ResourceType) -> f64 {
+    match resources.iter().find(|r|{r.resource_type == *resource_type}) {
+        Some(resource) => resource.num,
+        None => 0.0
+    }
+}
+
+// TODO 看看all_productions能不能删掉
+fn zcj_recipes(all_resources: &HashSet<ResourceType>, all_productions: &HashSet<ResourceType>) -> Vec<Recipe> {
     all_resources
-        .iter()
+        .union(all_productions)
         .filter(|resource| match resource {
             ResourceType::Direct(cargo) => cargo.point > 0,
             _ => false,
@@ -128,13 +136,17 @@ fn zcj_recipes(all_resources: &HashSet<ResourceType>) -> Vec<Recipe> {
 // TODO 传入需求和约束，返回求解过程和结果
 pub fn solve() {
     // 生成所有公式
-    let mut all_recipes = recipes(BASIC_RECIPES);
+    let not_all_recipes = recipes(BASIC_RECIPES);
     // 找出所有在公式中出现过的资源
+    let all_resources = find_all_resources(&not_all_recipes);
+    let all_productions = find_all_production(&not_all_recipes);
+    let recipes_extra = zcj_recipes(&all_resources, &all_productions);
+    // dbg!(&recipes_extra);
+    // dbg!(&all_productions);
+    let all_recipes = [not_all_recipes, recipes_extra].concat();
     let all_resources = find_all_resources(&all_recipes);
     let all_productions = find_all_production(&all_recipes);
-    let recipes_extra = zcj_recipes(&all_resources);
-    dbg!(&recipes_extra);
-    all_recipes.extend(recipes_extra);
+
     // dbg!(&all_recipes);
 
     // 定义变量，每个变量代表一个公式的调用次数
@@ -150,8 +162,6 @@ pub fn solve() {
 
     let mut problem = model.minimise(objective).using(clarabel);
 
-    // TODO 根据公式表生成约束
-    // 自动生成 constraint_recipe
     constraint_recipe(&mut problem, &all_recipes, &all_productions, &recipe_vars);
 
     let need_type = ResourceType::Direct(Cargo {
@@ -159,7 +169,7 @@ pub fn solve() {
         point: 0,
     });
     assert!(all_productions.contains(&need_type)); // 确保待求解的物品存在
-    let need_num = 100.0;
+    let need_num = 10000.0;
 
     let _constraint_need = problem.add_constraint(
         recipe_vars
@@ -184,6 +194,7 @@ pub fn solve() {
             .geq(need_num),
     );
 
+    // FIXME 异常处理
     let solution = problem.solve().unwrap();
 
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
