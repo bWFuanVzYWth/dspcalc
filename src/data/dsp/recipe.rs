@@ -147,54 +147,6 @@ pub struct BasicRecipe<'a> {
 }
 
 pub const BASIC_RECIPES: &[BasicRecipe] = &[
-    // 采矿
-    BasicRecipe {
-        resources: &[Resource::time(1.0)],
-        products: &[Resource::from_item(煤矿, 1.0)],
-        speed_up: false,
-        increase_production: false,
-    },
-    // 喷涂
-    BasicRecipe {
-        resources: &[
-            Resource::from_item(煤矿, 4.0),
-            Resource::from_item_point(增产剂mk3, 4, 4.0 / 75.0),
-            Resource::time(1.0 / 30.0),
-        ],
-        products: &[Resource::from_item_point(煤矿, 4, 4.0)],
-        speed_up: false,
-        increase_production: false,
-    },
-    BasicRecipe {
-        resources: &[
-            Resource::from_item(煤矿, 4.0),
-            Resource::from_item_point(增产剂mk3, 4, 3.0 / 75.0),
-            Resource::time(1.0 / 30.0),
-        ],
-        products: &[Resource::from_item_point(煤矿, 3, 4.0)],
-        speed_up: false,
-        increase_production: false,
-    },
-    BasicRecipe {
-        resources: &[
-            Resource::from_item(煤矿, 4.0),
-            Resource::from_item_point(增产剂mk3, 4, 2.0 / 75.0),
-            Resource::time(1.0 / 30.0),
-        ],
-        products: &[Resource::from_item_point(煤矿, 2, 4.0)],
-        speed_up: false,
-        increase_production: false,
-    },
-    BasicRecipe {
-        resources: &[
-            Resource::from_item(煤矿, 1.0),
-            Resource::from_item_point(增产剂mk3, 4, 1.0 / 75.0),
-            Resource::time(1.0 / 30.0),
-        ],
-        products: &[Resource::from_item_point(煤矿, 1, 4.0)],
-        speed_up: false,
-        increase_production: false,
-    },
     // 生产
     BasicRecipe {
         resources: &[Resource::from_item(煤矿, 2.0), Resource::time(2.0)],

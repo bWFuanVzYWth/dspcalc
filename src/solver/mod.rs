@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::dsp::{
-    item::{Cargo, IndirectResource, Item, ResourceType},
+    item::{Cargo, IndirectResource, Item, Resource, ResourceType},
     recipe::{recipes, BasicRecipe, Recipe, BASIC_RECIPES},
 };
 use good_lp::{
@@ -35,21 +35,21 @@ fn constraint_recipe(
                 .any(|resource| resource.resource_type == *production)
         });
 
-        let c_production = all_find_production
+        let constraint_production = all_find_production
             .map(|(i, recipe)| {
                 let var = recipe_vars.get(&i).unwrap();
                 *var / time(recipe)
             })
             .sum::<Expression>();
 
-        let c_resource = all_find_resource
+        let constraint_resource = all_find_resource
             .map(|(i, recipe)| {
                 let var = recipe_vars.get(&i).unwrap();
                 *var / time(recipe)
             })
             .sum::<Expression>();
 
-        problem.add_constraint(c_production.geq(c_resource));
+        problem.add_constraint(constraint_production.geq(constraint_resource));
     });
 }
 
@@ -95,14 +95,48 @@ fn time(recipe: &Recipe) -> f64 {
         .num
 }
 
+fn zcj_recipes(all_resources: &HashSet<ResourceType>) -> Vec<Recipe> {
+    all_resources
+        .iter()
+        .filter(|resource| match resource {
+            ResourceType::Direct(cargo) => cargo.point > 0,
+            _ => false,
+        })
+        .map(|resource| {
+            let cargo = match resource {
+                ResourceType::Direct(cargo) => cargo,
+                _ => panic!("error"),
+            };
+
+            let stack = 4.0 * 4.0 / cargo.point as f64;
+
+            Recipe {
+                resources: vec![
+                    Resource::from_item_point(cargo.item.clone(), 0, stack),
+                    Resource::time(1.0 / 30.0),
+                    Resource::from_item_point(Item::增产剂mk3, 4, 4.0 / 75.0),
+                ],
+                products: vec![Resource::from_item_point(
+                    cargo.item.clone(),
+                    cargo.point,
+                    stack,
+                )],
+            }
+        })
+        .collect()
+}
+
 // TODO 传入需求和约束，返回求解过程和结果
 pub fn solve() {
     // 生成所有公式
-    let all_recipes = recipes(BASIC_RECIPES);
+    let mut all_recipes = recipes(BASIC_RECIPES);
     // 找出所有在公式中出现过的资源
     let all_resources = find_all_resources(&all_recipes);
     let all_productions = find_all_production(&all_recipes);
-    // dbg!(recipes);
+    let recipes_extra = zcj_recipes(&all_resources);
+    dbg!(&recipes_extra);
+    all_recipes.extend(recipes_extra);
+    // dbg!(&all_recipes);
 
     // 定义变量，每个变量代表一个公式的调用次数
     let mut recipe_vars = HashMap::new();
