@@ -1,7 +1,7 @@
 use crate::data::dsp::item::{Cargo, IndirectResource};
 
 use super::item::{
-    Item::{*},
+    Item::*,
     Resource,
     ResourceType::{Direct, Indirect},
 };
@@ -19,7 +19,7 @@ const fn speed_up_scale(point: u64) -> f64 {
         2 => 1.0 / 1.5,
         3 => 1.0 / 1.75,
         4 => 1.0 / 2.0,
-        _ => 1.0 / 1.0,
+        _ => 1.0,
     }
 }
 
