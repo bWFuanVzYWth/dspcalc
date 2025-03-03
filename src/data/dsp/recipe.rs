@@ -71,44 +71,49 @@ const fn increase_production_scale(point: u64) -> f64 {
 
 fn increase_production(basic_recipe: &BasicRecipe, point: u64) -> Recipe {
     Recipe {
-        // 为所有原料喷涂增产剂
-        resources: basic_recipe
-            .resources
-            .iter()
-            .map(|resource| match &resource.resource_type {
-                Direct(cargo) => Resource {
-                    resource_type: Direct(Cargo {
-                        item: cargo.item.clone(),
-                        point,
-                    }),
-                    num: resource.num,
-                },
-                Indirect(_) => resource.clone(),
-            })
-            .collect(),
+        resources: increase_production_resources(basic_recipe, point),
+        products: increase_production_products(basic_recipe, point),
+    }
+}
 
-        // 增产
-        products: basic_recipe
-            .products
-            .iter()
-            .map(|product| match &product.resource_type {
-                Direct(cargo) => Resource {
-                    resource_type: Direct(Cargo {
-                        item: cargo.item.clone(),
-                        point: 0,
-                    }),
+fn increase_production_products(basic_recipe: &BasicRecipe<'_>, point: u64) -> Vec<Resource> {
+    basic_recipe
+        .products
+        .iter()
+        .map(|product| match &product.resource_type {
+            Direct(cargo) => Resource {
+                resource_type: Direct(Cargo {
+                    item: cargo.item.clone(),
+                    point: 0,
+                }),
+                num: increase_production_scale(point) * product.num,
+            },
+            Indirect(indirect) => match indirect {
+                IndirectResource::Power => Resource {
+                    resource_type: Indirect(IndirectResource::Power),
                     num: increase_production_scale(point) * product.num,
                 },
-                Indirect(indirect) => match indirect {
-                    IndirectResource::Power => Resource {
-                        resource_type: Indirect(IndirectResource::Power),
-                        num: increase_production_scale(point) * product.num,
-                    },
-                    _ => product.clone(),
-                },
-            })
-            .collect(),
-    }
+                _ => product.clone(),
+            },
+        })
+        .collect()
+}
+
+fn increase_production_resources(basic_recipe: &BasicRecipe<'_>, point: u64) -> Vec<Resource> {
+    basic_recipe
+        .resources
+        .iter()
+        .map(|resource| match &resource.resource_type {
+            Direct(cargo) => Resource {
+                resource_type: Direct(Cargo {
+                    item: cargo.item.clone(),
+                    point,
+                }),
+                num: resource.num,
+            },
+            Indirect(_) => resource.clone(),
+        })
+        .collect()
 }
 
 fn recipes_increase_production(recipes: &mut Vec<Recipe>, basic_recipe: &BasicRecipe) {

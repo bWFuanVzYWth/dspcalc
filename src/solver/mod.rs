@@ -9,26 +9,26 @@ use good_lp::{
     SolverModel, Variable,
 };
 
+// 辅助函数：生成单个配方的表达式项
+fn recipe_term(
+    (i, recipe): (usize, &Recipe),
+    production: &ResourceType,
+    recipe_vars: &HashMap<usize, Variable>,
+    resource_accessor: fn(&Recipe) -> &[Resource],
+) -> Option<Expression> {
+    let resources = resource_accessor(recipe);
+    resources
+        .iter()
+        .find(|res| res.resource_type == *production)
+        .map(|_| recipe_vars[&i] * stack(resources, production) / time(recipe))
+}
+
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
     recipe_vars: &HashMap<usize, Variable>,
 ) {
-    // 辅助函数：生成单个配方的表达式项
-    fn recipe_term(
-        (i, recipe): (usize, &Recipe),
-        production: &ResourceType,
-        recipe_vars: &HashMap<usize, Variable>,
-        resource_accessor: fn(&Recipe) -> &[Resource],
-    ) -> Option<Expression> {
-        let resources = resource_accessor(recipe);
-        resources
-            .iter()
-            .find(|res| res.resource_type == *production)
-            .map(|_| recipe_vars[&i] * stack(resources, production) / time(recipe))
-    }
-
     all_productions.iter().for_each(|production| {
         let production_expr: Expression = recipes
             .iter()
@@ -139,19 +139,25 @@ pub fn solve() {
     let all_productions = find_all_production(&all_recipes);
 
     // 定义变量，每个变量代表一个公式的调用次数
-    let mut recipe_vars = HashMap::new();
+    let mut recipes_frequency = HashMap::new();
     let mut model = variables!();
     all_recipes.iter().enumerate().for_each(|(i, _)| {
-        let var = model.add(variable().min(0.0));
-        recipe_vars.insert(i, var); // recipes_index -> variables
+        let frequency = model.add(variable().min(0.0));
+        recipes_frequency.insert(i, frequency); // recipes_index -> recipes_frequency
     });
 
     // TODO 多种待优化目标，如最小化加权原矿，最小化占地
-    let objective = objective(&recipe_vars);
+    let objective = objective(&recipes_frequency);
 
+    // 就叫minimise，不是minimize，奇异搞笑
     let mut problem = model.minimise(objective).using(clarabel);
 
-    constraint_recipe(&mut problem, &all_recipes, &all_productions, &recipe_vars);
+    constraint_recipe(
+        &mut problem,
+        &all_recipes,
+        &all_productions,
+        &recipes_frequency,
+    );
 
     let need_type = ResourceType::Direct(Cargo {
         item: Item::高能石墨,
@@ -160,8 +166,34 @@ pub fn solve() {
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
     let need_num = 10000.0;
 
-    let _constraint_need = problem.add_constraint(
-        recipe_vars
+    let _constraint_need = constraint_need(
+        &all_recipes,
+        &recipes_frequency,
+        &mut problem,
+        need_type,
+        need_num,
+    );
+
+    // FIXME 异常处理
+    let solution = problem.solve().unwrap();
+
+    all_recipes.iter().enumerate().for_each(|(i, recipe)| {
+        let num = solution.value(*recipes_frequency.get(&i).unwrap());
+        if num > 0.00001 {
+            println!("公式:{:#?}, 数量: {}", recipe, num);
+        }
+    });
+}
+
+fn constraint_need(
+    all_recipes: &[Recipe],
+    recipes_frequency: &HashMap<usize, Variable>,
+    problem: &mut ClarabelProblem,
+    need_type: ResourceType,
+    need_num: f64,
+) -> good_lp::constraint::ConstraintReference {
+    problem.add_constraint(
+        recipes_frequency
             .iter()
             .map(|(recipes_index, variable)| {
                 let need_resource = all_recipes[*recipes_index]
@@ -176,20 +208,10 @@ pub fn solve() {
                         // 计算单位时间产能
                         (product.num / time) * (*variable)
                     }
-                    None => 0.0.into(),
+                    None => (0.0).into(),
                 }
             })
             .sum::<Expression>()
             .geq(need_num),
-    );
-
-    // FIXME 异常处理
-    let solution = problem.solve().unwrap();
-
-    all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-        let num = solution.value(*recipe_vars.get(&i).unwrap());
-        if num > 0.00001 {
-            println!("公式:{:#?}, 数量: {}", recipe, num);
-        }
-    });
+    )
 }
