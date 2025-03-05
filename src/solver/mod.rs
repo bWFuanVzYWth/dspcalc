@@ -124,6 +124,8 @@ fn proliferator_recipes(all_items: &HashSet<ResourceType>) -> Vec<Recipe> {
 pub fn solve() {
     let raw_recipes = recipe::recipes();
 
+    // TODO 简化这里的逻辑，现在无法计算增产剂
+
     // 展平所有基础公式
     let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
     // 找出所有在公式中出现过的资源
@@ -147,6 +149,14 @@ pub fn solve() {
     // TODO 设置求解精度
     // 就叫minimise，不是minimize，奇异搞笑
     let mut problem = model.minimise(objective).using(clarabel);
+    // 设置求解精度
+    problem
+        .settings()
+        .verbose(true) // 启用详细输出
+        .tol_gap_abs(f64::EPSILON) // 绝对对偶间隙容差
+        .tol_gap_rel(f64::EPSILON) // 相对对偶间隙容差
+        .tol_feas(f64::EPSILON) // 可行性容差
+        .max_iter(u32::MAX); // 最大迭代次数
 
     constraint_recipe(
         &mut problem,
@@ -156,7 +166,7 @@ pub fn solve() {
     );
 
     let need_type = ResourceType::Direct(Cargo {
-        item_id: 6004,
+        item_id: 6006,
         point: 0,
     });
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
@@ -175,7 +185,7 @@ pub fn solve() {
     let raw_items = items();
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
         let num = solution.value(*recipes_frequency.get(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
-        if num > need_frequency * 0.001 {
+        if num > need_frequency * (16.0 * f64::EPSILON) {
             // println!("数量: {}, 公式: {:?}", num, recipe);
             print_recipe(num, recipe, &raw_items.data_array);
         }
@@ -188,7 +198,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         .iter()
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
-                "{} * {}.{}, ",
+                "{:.6} * {}.{}, ",
                 num * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.point
@@ -203,7 +213,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         .iter()
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
-                "{} * {}.{}, ",
+                "{:.6} * {}.{}, ",
                 num * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.point
