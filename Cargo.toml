@@ -14,3 +14,5 @@ good_lp = { version = "1.12.0", features = [
 num = "0.4.3"
 strum = "0.27.1"
 strum_macros = "0.27.1"
+
+dspdb = { git = "https://github.com/bWFuanVzYWth/dspdb", branch = "master" }

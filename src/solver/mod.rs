@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::dsp::{
-    item::{Cargo, IndirectResource, Item, Resource, ResourceType},
-    recipe::{recipes, Recipe, BASIC_RECIPES},
+    item::{Cargo, IndirectResource, Resource, ResourceType},
+    recipe::{recipes, Recipe},
 };
 use good_lp::{
     clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
@@ -84,7 +84,7 @@ fn time(recipe: &Recipe) -> f64 {
             }
             false
         })
-        .unwrap()
+        .unwrap() // FIXME 思考：时间是否应该设置为必要参数？
         .num
 }
 
@@ -164,21 +164,20 @@ pub fn solve() {
         point: 0,
     });
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
-    let need_num = 10000.0;
+    let need_frequency = 10000.0;
 
     let _constraint_need = constraint_need(
         &all_recipes,
         &recipes_frequency,
         &mut problem,
         need_type,
-        need_num,
+        need_frequency,
     );
 
-    // FIXME 异常处理
-    let solution = problem.solve().unwrap();
+    let solution = problem.solve().unwrap(); // FIXME 异常处理
 
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-        let num = solution.value(*recipes_frequency.get(&i).unwrap());
+        let num = solution.value(*recipes_frequency.get(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
         if num > 0.00001 {
             println!("公式:{:#?}, 数量: {}", recipe, num);
         }
