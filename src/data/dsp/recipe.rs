@@ -1,9 +1,9 @@
-use crate::data::dsp::item::{Cargo, IndirectResource};
-use dspdb::recipe::{self, RecipeItem};
+use crate::data::dsp::item::Cargo;
+use dspdb::recipe::RecipeItem;
 
 use super::item::{
     Resource,
-    ResourceType::{Direct, Indirect},
+    ResourceType::Direct,
 };
 
 #[derive(Clone, Debug)]
@@ -52,7 +52,7 @@ fn speed_up(recipe_item: &RecipeItem, point: u64) -> Recipe {
             })
             .collect(),
 
-        time: recipe_item.time_spend as f64,
+        time: recipe_item.time_spend as f64 / speed_up_scale(point),
     }
 }
 
@@ -108,7 +108,7 @@ fn productive(recipe_item: &RecipeItem, point: u64) -> Recipe {
 }
 
 fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
-    if recipe_item.non_productive == false {
+    if !recipe_item.non_productive {
         recipes.push(productive(recipe_item, 1));
         recipes.push(productive(recipe_item, 2));
         recipes.push(productive(recipe_item, 3));

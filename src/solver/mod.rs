@@ -1,12 +1,12 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::data::dsp::{
-    item::{Cargo, IndirectResource, Resource, ResourceType},
+    item::{Cargo, Resource, ResourceType},
     recipe::{flatten_recipes, Recipe},
 };
 use dspdb::{
-    item::{items, ItemData, ItemProtoSet},
-    recipe::{self, recipes},
+    item::{items, ItemData},
+    recipe::{self},
 };
 use good_lp::{
     clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
@@ -64,17 +64,7 @@ fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
     let mut items_type = HashSet::new();
     recipes.iter().for_each(|recipe| {
         recipe.results.iter().for_each(|product| {
-            items_type.insert(product.resource_type.clone());
-        });
-    });
-    items_type
-}
-
-fn find_all_items(recipes: &[Recipe]) -> HashSet<ResourceType> {
-    let mut items_type = HashSet::new();
-    recipes.iter().for_each(|recipe| {
-        recipe.items.iter().for_each(|resource| {
-            items_type.insert(resource.resource_type.clone());
+            items_type.insert(product.resource_type);
         });
     });
     items_type
@@ -88,50 +78,40 @@ fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
 }
 
 // TODO 低级喷涂
-fn proliferator_recipes(all_items: &HashSet<ResourceType>) -> Vec<Recipe> {
-    all_items
-        .iter()
-        .filter(|resource| match resource {
-            ResourceType::Direct(cargo) => cargo.point > 0,
-            _ => false,
-        })
-        .map(|resource| {
-            let cargo = match resource {
-                ResourceType::Direct(cargo) => cargo,
-                _ => panic!("error"),
-            };
-
-            let stack = 4.0 * 4.0 / cargo.point as f64;
-
-            Recipe {
+fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
+    let mut recipes = Vec::new();
+    items_data.iter().for_each(|item_data| {
+        (1..=4).for_each(|point| {
+            let stack = 4.0 * 4.0 / point as f64;
+            recipes.push(Recipe {
                 items: vec![
-                    Resource::from_item_point(cargo.item_id.clone(), 0, stack),
+                    Resource::from_item_point(item_data.id, 0, stack),
                     Resource::from_item_point(增产剂MK3_ID, 4, 4.0 / 75.0),
                 ],
-                results: vec![Resource::from_item_point(
-                    cargo.item_id.clone(),
-                    cargo.point,
-                    stack,
-                )],
+                results: vec![Resource::from_item_point(item_data.id, point, stack)],
                 time: 2.0,
-            }
+            });
         })
-        .collect()
+    });
+    recipes
 }
 
 // TODO 设置生产设备
 // TODO 传入需求和约束，返回求解过程和结果
 pub fn solve() {
     let raw_recipes = recipe::recipes();
+    let raw_items = items();
 
     // TODO 简化这里的逻辑，现在无法计算增产剂
 
     // 展平所有基础公式
     let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
+    let proliferator_recipes = proliferator_recipes(&raw_items.data_array);
+
     // 找出所有在公式中出现过的资源
-    let flatten_basic_items = find_all_items(&flatten_basic_recipes);
+    // let flatten_basic_items = find_all_items(&flatten_basic_recipes);
     // 生成喷涂公式
-    let proliferator_recipes = proliferator_recipes(&flatten_basic_items);
+    // let proliferator_recipes = proliferator_recipes(&flatten_basic_items);
     let all_recipes = [flatten_basic_recipes, proliferator_recipes].concat();
     let all_productions = find_all_production(&all_recipes);
 
@@ -182,10 +162,9 @@ pub fn solve() {
 
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 
-    let raw_items = items();
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
         let num = solution.value(*recipes_frequency.get(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
-        if num > need_frequency * (16.0 * f64::EPSILON) {
+        if num > need_frequency * f64::from(f32::EPSILON) {
             // println!("数量: {}, 公式: {:?}", num, recipe);
             print_recipe(num, recipe, &raw_items.data_array);
         }
@@ -203,7 +182,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
                 item_name(cargo.item_id, items),
                 cargo.point
             ),
-            ResourceType::Indirect(indirect_resource) => todo!(),
+            ResourceType::Indirect(_indirect_resource) => todo!(),
         });
 
     print!("-> ");
@@ -218,10 +197,10 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
                 item_name(cargo.item_id, items),
                 cargo.point
             ),
-            ResourceType::Indirect(indirect_resource) => todo!(),
+            ResourceType::Indirect(_indirect_resource) => todo!(),
         });
 
-    print!("\n");
+    println!();
 }
 
 fn item_name(item_id: i16, items: &[ItemData]) -> String {
