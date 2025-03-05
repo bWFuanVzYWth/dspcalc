@@ -110,7 +110,7 @@ dependencies = [
 [[package]]
 name = "dspdb"
 version = "0.1.0"
-source = "git+https://github.com/bWFuanVzYWth/dspdb?branch=master#52307d5e06a17d4fc511dfdb601acbc4559e6d19"
+source = "git+https://github.com/bWFuanVzYWth/dspdb?branch=master#f7f1fc58171f56a63dbdd365163c908b9e683523"
 dependencies = [
  "serde",
  "serde_json",
