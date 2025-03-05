@@ -4,7 +4,10 @@ use crate::data::dsp::{
     item::{Cargo, IndirectResource, Resource, ResourceType},
     recipe::{flatten_recipes, Recipe},
 };
-use dspdb::recipe::{self, recipes};
+use dspdb::{
+    item::{items, ItemData, ItemProtoSet},
+    recipe::{self, recipes},
+};
 use good_lp::{
     clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
     SolverModel, Variable,
@@ -110,12 +113,13 @@ fn proliferator_recipes(all_items: &HashSet<ResourceType>) -> Vec<Recipe> {
                     cargo.point,
                     stack,
                 )],
-                time: 1.0 / 30.0,
+                time: 2.0,
             }
         })
         .collect()
 }
 
+// TODO 设置生产设备
 // TODO 传入需求和约束，返回求解过程和结果
 pub fn solve() {
     let raw_recipes = recipe::recipes();
@@ -140,6 +144,7 @@ pub fn solve() {
     // TODO 多种待优化目标，如最小化加权原矿，最小化占地
     let objective = objective(&recipes_frequency);
 
+    // TODO 设置求解精度
     // 就叫minimise，不是minimize，奇异搞笑
     let mut problem = model.minimise(objective).using(clarabel);
 
@@ -151,7 +156,7 @@ pub fn solve() {
     );
 
     let need_type = ResourceType::Direct(Cargo {
-        item_id: 6006,
+        item_id: 6004,
         point: 0,
     });
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
@@ -167,12 +172,55 @@ pub fn solve() {
 
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 
+    let raw_items = items();
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
         let num = solution.value(*recipes_frequency.get(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
-        if num > 0.00001 {
-            println!("公式:{:#?}, 数量: {}", recipe, num);
+        if num > need_frequency * 0.001 {
+            // println!("数量: {}, 公式: {:?}", num, recipe);
+            print_recipe(num, recipe, &raw_items.data_array);
         }
     });
+}
+
+fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
+    recipe
+        .items
+        .iter()
+        .for_each(|resource| match resource.resource_type {
+            ResourceType::Direct(cargo) => print!(
+                "{} * {}.{}, ",
+                num * resource.num / recipe.time,
+                item_name(cargo.item_id, items),
+                cargo.point
+            ),
+            ResourceType::Indirect(indirect_resource) => todo!(),
+        });
+
+    print!("-> ");
+
+    recipe
+        .results
+        .iter()
+        .for_each(|resource| match resource.resource_type {
+            ResourceType::Direct(cargo) => print!(
+                "{} * {}.{}, ",
+                num * resource.num / recipe.time,
+                item_name(cargo.item_id, items),
+                cargo.point
+            ),
+            ResourceType::Indirect(indirect_resource) => todo!(),
+        });
+
+    print!("\n");
+}
+
+fn item_name(item_id: i16, items: &[ItemData]) -> String {
+    items
+        .iter()
+        .find(|item| item.id == item_id)
+        .unwrap()
+        .name
+        .clone()
 }
 
 fn constraint_need(
