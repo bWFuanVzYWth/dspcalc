@@ -91,6 +91,19 @@ fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
                 results: vec![Resource::from_item_point(item_data.id, point, stack)],
                 time: 2.0,
             });
+        });
+
+        // TODO 还没写完，改成低级喷涂
+        (1..=2).for_each(|point| {
+            let stack = 4.0 * 4.0 / point as f64;
+            recipes.push(Recipe {
+                items: vec![
+                    Resource::from_item_point(item_data.id, 0, stack),
+                    Resource::from_item_point(增产剂MK3_ID, 4, 4.0 / 75.0),
+                ],
+                results: vec![Resource::from_item_point(item_data.id, point, stack)],
+                time: 2.0,
+            });
         })
     });
     recipes
