@@ -52,9 +52,9 @@ impl 增产剂 {
     pub const fn speed_up(point: u64) -> f64 {
         match point {
             1 => 1.25,
-            2 => 1.50,
+            2 => 1.5,
             3 => 1.75,
-            4 => 2.00,
+            4 => 2.0,
             _ => 1.0,
         }
     }
@@ -111,7 +111,7 @@ fn objective(recipe_vars: &BiMap<usize, Variable>, recipes: &[Recipe]) -> Expres
     // 最小化建筑总数量
     recipe_vars
         .iter()
-        .map(|(_, variable)| *variable / recipes[*recipe_vars.get_by_right(variable).unwrap()].time)
+        .map(|(_, variable)| *variable * recipes[*recipe_vars.get_by_right(variable).unwrap()].time)
         .sum::<Expression>()
 }
 
@@ -206,16 +206,14 @@ pub fn solve() {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
-    // TODO 简化这里的逻辑，现在无法计算增产剂
+    // TODO 原矿化、采矿公式
 
+    // FIXME 增产剂自己不能被展平
     // 展平所有基础公式
     let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
     let proliferator_recipes = proliferator_recipes(&raw_items.data_array);
 
     // 找出所有在公式中出现过的资源
-    // let flatten_basic_items = find_all_items(&flatten_basic_recipes);
-    // 生成喷涂公式
-    // let proliferator_recipes = proliferator_recipes(&flatten_basic_items);
     let all_recipes = [flatten_basic_recipes, proliferator_recipes].concat();
     let all_productions = find_all_production(&all_recipes);
 

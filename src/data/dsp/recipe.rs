@@ -52,7 +52,7 @@ fn speed_up(recipe_item: &RecipeItem, point: u64) -> Recipe {
             })
             .collect(),
 
-        time: recipe_item.time_spend as f64 / speed_up_scale(point),
+        time: recipe_item.time_spend as f64 * speed_up_scale(point),
     }
 }
 
