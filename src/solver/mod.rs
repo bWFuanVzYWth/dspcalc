@@ -13,7 +13,64 @@ use good_lp::{
     SolverModel, Variable,
 };
 
+const 增产剂MK1_ID: i16 = 1141;
+const 增产剂MK2_ID: i16 = 1142;
 const 增产剂MK3_ID: i16 = 1143;
+
+enum 增产剂 {
+    MK1 = 1141,
+    MK2 = 1142,
+    MK3 = 1143,
+}
+
+impl 增产剂 {
+    pub const fn point(t: &Self) -> u64 {
+        match t {
+            增产剂::MK1 => 1,
+            增产剂::MK2 => 2,
+            增产剂::MK3 => 4,
+        }
+    }
+
+    pub const fn life(t: &Self, point: u64) -> u64 {
+        (Self::extra(point)
+            * match t {
+                增产剂::MK1 => 12.0,
+                增产剂::MK2 => 24.0,
+                增产剂::MK3 => 60.0,
+            }) as u64
+    }
+
+    pub const fn extra(point: u64) -> f64 {
+        match point {
+            1 => 1.125,
+            2 => 1.2,
+            3 => 1.225,
+            4 => 1.25,
+            _ => 1.0,
+        }
+    }
+
+    pub const fn speed_up(point: u64) -> f64 {
+        match point {
+            1 => 1.25,
+            2 => 1.50,
+            3 => 1.75,
+            4 => 2.00,
+            _ => 1.0,
+        }
+    }
+
+    pub const fn power(point: u64) -> f64 {
+        match point {
+            1 => 1.3,
+            2 => 1.7,
+            3 => 2.1,
+            4 => 2.5,
+            _ => 1.0,
+        }
+    }
+}
 
 // 辅助函数：生成单个配方的表达式项
 fn recipe_term(
@@ -77,36 +134,72 @@ fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
     }
 }
 
-// TODO 低级喷涂
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
     items_data.iter().for_each(|item_data| {
-        (1..=4).for_each(|point| {
-            let stack = 4.0 * 4.0 / point as f64;
+        proliferator_mk3(&mut recipes, item_data);
+        proliferator_mk2(&mut recipes, item_data);
+        proliferator_mk1(&mut recipes, item_data);
+    });
+    recipes
+}
+
+const STACK: f64 = 4.0;
+
+fn proliferator_mk3(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
+    (1..=4).for_each(|cargo_point| {
+        (0..=4).for_each(|proliferator_point| {
             recipes.push(Recipe {
                 items: vec![
-                    Resource::from_item_point(item_data.id, 0, stack),
-                    Resource::from_item_point(增产剂MK3_ID, 4, 4.0 / 75.0),
+                    Resource::from_item_point(item_data.id, 0, STACK),
+                    Resource::from_item_point(
+                        增产剂::MK3 as i16,
+                        proliferator_point,
+                        STACK / (增产剂::life(&增产剂::MK3, proliferator_point) as f64),
+                    ),
                 ],
-                results: vec![Resource::from_item_point(item_data.id, point, stack)],
+                results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
                 time: 2.0,
             });
         });
+    });
+}
 
-        // TODO 还没写完，改成低级喷涂
-        (1..=2).for_each(|point| {
-            let stack = 4.0 * 4.0 / point as f64;
+fn proliferator_mk2(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
+    (1..=2).for_each(|cargo_point| {
+        (1..=4).for_each(|proliferator_point| {
             recipes.push(Recipe {
                 items: vec![
-                    Resource::from_item_point(item_data.id, 0, stack),
-                    Resource::from_item_point(增产剂MK3_ID, 4, 4.0 / 75.0),
+                    Resource::from_item_point(item_data.id, 0, STACK),
+                    Resource::from_item_point(
+                        增产剂::MK2 as i16,
+                        proliferator_point,
+                        4.0 / (增产剂::life(&增产剂::MK2, proliferator_point) as f64),
+                    ),
                 ],
-                results: vec![Resource::from_item_point(item_data.id, point, stack)],
+                results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
                 time: 2.0,
             });
-        })
+        });
     });
-    recipes
+}
+
+fn proliferator_mk1(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
+    const CARGO_POINT: u64 = 1;
+    (1..=4).for_each(|proliferator_point| {
+        recipes.push(Recipe {
+            items: vec![
+                Resource::from_item_point(item_data.id, 0, STACK),
+                Resource::from_item_point(
+                    增产剂::MK1 as i16,
+                    proliferator_point,
+                    4.0 / (增产剂::life(&增产剂::MK1, proliferator_point) as f64),
+                ),
+            ],
+            results: vec![Resource::from_item_point(item_data.id, CARGO_POINT, STACK)],
+            time: 2.0,
+        });
+    });
 }
 
 // TODO 设置生产设备
@@ -190,7 +283,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         .iter()
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}.{}, ",
+                "{:.6} * {}_{}, ",
                 num * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.point
@@ -205,7 +298,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         .iter()
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}.{}, ",
+                "{:.6} * {}_{}, ",
                 num * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.point
