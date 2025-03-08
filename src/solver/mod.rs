@@ -1,4 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use bimap::BiMap;
+use std::collections::HashSet;
 
 use crate::data::dsp::{
     item::{Cargo, Resource, ResourceType},
@@ -13,10 +14,7 @@ use good_lp::{
     SolverModel, Variable,
 };
 
-const 增产剂MK1_ID: i16 = 1141;
-const 增产剂MK2_ID: i16 = 1142;
-const 增产剂MK3_ID: i16 = 1143;
-
+// TODO 单独拆分一个模块
 enum 增产剂 {
     MK1 = 1141,
     MK2 = 1142,
@@ -76,21 +74,21 @@ impl 增产剂 {
 fn recipe_term(
     (i, recipe): (usize, &Recipe),
     production: &ResourceType,
-    recipe_vars: &HashMap<usize, Variable>,
+    recipe_vars: &BiMap<usize, Variable>,
     resource_accessor: fn(&Recipe) -> &[Resource],
 ) -> Option<Expression> {
     let items = resource_accessor(recipe);
     items
         .iter()
         .find(|res| res.resource_type == *production)
-        .map(|_| recipe_vars[&i] * stack(items, production) / recipe.time)
+        .map(|_| *recipe_vars.get_by_left(&i).unwrap() * stack(items, production) / recipe.time)
 }
 
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
-    recipe_vars: &HashMap<usize, Variable>,
+    recipe_vars: &BiMap<usize, Variable>,
 ) {
     all_productions.iter().for_each(|production| {
         let production_expr: Expression = recipes
@@ -109,11 +107,11 @@ fn constraint_recipe(
     });
 }
 
-// 最小化建筑总数量
-fn objective(recipe_vars: &HashMap<usize, Variable>) -> Expression {
+fn objective(recipe_vars: &BiMap<usize, Variable>, recipes: &[Recipe]) -> Expression {
+    // 最小化建筑总数量
     recipe_vars
         .iter()
-        .map(|(_, variable)| variable)
+        .map(|(_, variable)| *variable / recipes[*recipe_vars.get_by_right(variable).unwrap()].time)
         .sum::<Expression>()
 }
 
@@ -222,7 +220,7 @@ pub fn solve() {
     let all_productions = find_all_production(&all_recipes);
 
     // 定义变量，每个变量代表一个公式的调用次数
-    let mut recipes_frequency = HashMap::new();
+    let mut recipes_frequency = bimap::BiMap::new();
     let mut model = variables!();
     all_recipes.iter().enumerate().for_each(|(i, _)| {
         let frequency = model.add(variable().min(0.0));
@@ -230,7 +228,7 @@ pub fn solve() {
     });
 
     // TODO 多种待优化目标，如最小化加权原矿，最小化占地
-    let objective = objective(&recipes_frequency);
+    let objective = objective(&recipes_frequency, &all_recipes);
 
     // TODO 设置求解精度
     // 就叫minimise，不是minimize，奇异搞笑
@@ -269,9 +267,8 @@ pub fn solve() {
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-        let num = solution.value(*recipes_frequency.get(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
+        let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
         if num > need_frequency * f64::from(f32::EPSILON) {
-            // println!("数量: {}, 公式: {:?}", num, recipe);
             print_recipe(num, recipe, &raw_items.data_array);
         }
     });
@@ -320,7 +317,7 @@ fn item_name(item_id: i16, items: &[ItemData]) -> String {
 
 fn constraint_need(
     all_recipes: &[Recipe],
-    recipes_frequency: &HashMap<usize, Variable>,
+    recipes_frequency: &BiMap<usize, Variable>,
     problem: &mut ClarabelProblem,
     need_type: ResourceType,
     need_num: f64,
