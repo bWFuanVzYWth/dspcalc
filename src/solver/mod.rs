@@ -76,12 +76,13 @@ fn recipe_term(
     production: &ResourceType,
     recipe_vars: &BiMap<usize, Variable>,
     resource_accessor: fn(&Recipe) -> &[Resource],
-) -> Option<Expression> {
+) -> Expression {
     let items = resource_accessor(recipe);
     items
         .iter()
-        .find(|res| res.resource_type == *production)
+        .filter(|res| res.resource_type == *production)
         .map(|_| *recipe_vars.get_by_left(&i).unwrap() * stack(items, production) / recipe.time)
+        .sum::<Expression>()
 }
 
 fn constraint_recipe(
@@ -94,13 +95,13 @@ fn constraint_recipe(
         let production_expr: Expression = recipes
             .iter()
             .enumerate()
-            .filter_map(|item| recipe_term(item, production, recipe_vars, |r| &r.results))
+            .map(|item| recipe_term(item, production, recipe_vars, |r| &r.results))
             .sum();
 
         let resource_expr: Expression = recipes
             .iter()
             .enumerate()
-            .filter_map(|item| recipe_term(item, production, recipe_vars, |r| &r.items))
+            .map(|item| recipe_term(item, production, recipe_vars, |r| &r.items))
             .sum();
 
         problem.add_constraint(production_expr.geq(resource_expr));
@@ -126,10 +127,11 @@ fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
 }
 
 fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
-    match items.iter().find(|r| r.resource_type == *resource_type) {
-        Some(resource) => resource.num,
-        None => 0.0,
-    }
+    items
+        .iter()
+        .filter(|r| r.resource_type == *resource_type)
+        .map(|r| r.num)
+        .sum()
 }
 
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
@@ -211,6 +213,7 @@ pub fn solve() {
     // FIXME 增产剂自己不能被展平
     // 展平所有基础公式
     let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
+    // 所有的喷涂公式
     let proliferator_recipes = proliferator_recipes(&raw_items.data_array);
 
     // 找出所有在公式中出现过的资源
@@ -228,7 +231,6 @@ pub fn solve() {
     // TODO 多种待优化目标，如最小化加权原矿，最小化占地
     let objective = objective(&recipes_frequency, &all_recipes);
 
-    // TODO 设置求解精度
     // 就叫minimise，不是minimize，奇异搞笑
     let mut problem = model.minimise(objective).using(clarabel);
     // 设置求解精度
@@ -252,8 +254,9 @@ pub fn solve() {
     );
 
     let need_type = ResourceType::Direct(Cargo {
-        item_id: 6006,
-        point: 0,
+        // item_id: 6006,
+        item_id: 1143,
+        point: 4,
     });
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
     let need_frequency = 10000.0;
@@ -328,20 +331,12 @@ fn constraint_need(
         recipes_frequency
             .iter()
             .map(|(recipes_index, variable)| {
-                let need_resource = all_recipes[*recipes_index]
+                all_recipes[*recipes_index]
                     .results
                     .iter()
-                    .find(|product| product.resource_type == need_type);
-
-                let time = all_recipes[*recipes_index].time;
-
-                match need_resource {
-                    Some(product) => {
-                        // 计算单位时间产能
-                        (product.num / time) * (*variable)
-                    }
-                    None => (0.0).into(),
-                }
+                    .filter(|product| product.resource_type == need_type)
+                    .map(|product| (product.num / all_recipes[*recipes_index].time) * (*variable))
+                    .sum::<Expression>()
             })
             .sum::<Expression>()
             .geq(need_num),
