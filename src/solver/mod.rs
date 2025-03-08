@@ -109,10 +109,12 @@ fn constraint_recipe(
 }
 
 fn objective(recipe_vars: &BiMap<usize, Variable>, recipes: &[Recipe]) -> Expression {
+    // TODO 检查这个到底怎么写才正确
     // 最小化建筑总数量
     recipe_vars
         .iter()
-        .map(|(_, variable)| *variable * recipes[*recipe_vars.get_by_right(variable).unwrap()].time)
+        // .map(|(_, variable)| *variable / recipes[*recipe_vars.get_by_right(variable).unwrap()].time)
+        .map(|(_, variable)| *variable)
         .sum::<Expression>()
 }
 
@@ -254,8 +256,8 @@ pub fn solve() {
     );
 
     let need_type = ResourceType::Direct(Cargo {
-        // item_id: 6006,
-        item_id: 1143,
+        item_id: 6006,
+        // item_id: 1143,
         point: 4,
     });
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
