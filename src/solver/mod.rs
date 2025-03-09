@@ -1,5 +1,12 @@
-use bimap::BiMap;
+pub mod proliferator;
+
 use std::collections::HashSet;
+
+use bimap::BiMap;
+use good_lp::{
+    clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
+    SolverModel, Variable,
+};
 
 use crate::data::dsp::{
     item::{Cargo, Resource, ResourceType},
@@ -9,68 +16,16 @@ use dspdb::{
     item::{items, ItemData},
     recipe::{self},
 };
-use good_lp::{
-    clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
-    SolverModel, Variable,
-};
+use proliferator::增产剂;
 
-// TODO 单独拆分一个模块
-enum 增产剂 {
-    MK1 = 1141,
-    MK2 = 1142,
-    MK3 = 1143,
+fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
+    items
+        .iter()
+        .filter(|r| r.resource_type == *resource_type)
+        .map(|r| r.num)
+        .sum()
 }
 
-impl 增产剂 {
-    pub const fn point(t: &Self) -> u64 {
-        match t {
-            增产剂::MK1 => 1,
-            增产剂::MK2 => 2,
-            增产剂::MK3 => 4,
-        }
-    }
-
-    pub const fn life(t: &Self, point: u64) -> u64 {
-        (Self::extra(point)
-            * match t {
-                增产剂::MK1 => 12.0,
-                增产剂::MK2 => 24.0,
-                增产剂::MK3 => 60.0,
-            }) as u64
-    }
-
-    pub const fn extra(point: u64) -> f64 {
-        match point {
-            1 => 1.125,
-            2 => 1.2,
-            3 => 1.225,
-            4 => 1.25,
-            _ => 1.0,
-        }
-    }
-
-    pub const fn speed_up(point: u64) -> f64 {
-        match point {
-            1 => 1.25,
-            2 => 1.5,
-            3 => 1.75,
-            4 => 2.0,
-            _ => 1.0,
-        }
-    }
-
-    pub const fn power(point: u64) -> f64 {
-        match point {
-            1 => 1.3,
-            2 => 1.7,
-            3 => 2.1,
-            4 => 2.5,
-            _ => 1.0,
-        }
-    }
-}
-
-// 辅助函数：生成单个配方的表达式项
 fn recipe_term(
     (i, recipe): (usize, &Recipe),
     production: &ResourceType,
@@ -108,12 +63,11 @@ fn constraint_recipe(
     });
 }
 
-fn objective(recipe_vars: &BiMap<usize, Variable>, recipes: &[Recipe]) -> Expression {
+fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression {
     // TODO 检查这个到底怎么写才正确
     // 最小化建筑总数量
     recipe_vars
         .iter()
-        // .map(|(_, variable)| *variable / recipes[*recipe_vars.get_by_right(variable).unwrap()].time)
         .map(|(_, variable)| *variable)
         .sum::<Expression>()
 }
@@ -126,14 +80,6 @@ fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
         });
     });
     items_type
-}
-
-fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
-    items
-        .iter()
-        .filter(|r| r.resource_type == *resource_type)
-        .map(|r| r.num)
-        .sum()
 }
 
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
@@ -231,11 +177,12 @@ pub fn solve() {
     });
 
     // TODO 多种待优化目标，如最小化加权原矿，最小化占地
-    let objective = objective(&recipes_frequency, &all_recipes);
+    let objective = minimize_buildings_count(&recipes_frequency);
 
-    // 就叫minimise，不是minimize，奇异搞笑
+    // 这个方法就叫minimise，不是minimize，奇异搞笑
     let mut problem = model.minimise(objective).using(clarabel);
-    // 设置求解精度
+
+    // 设置线性规划求解精度
     problem
         .settings()
         .verbose(true) // 启用详细输出
@@ -246,7 +193,7 @@ pub fn solve() {
         .tol_infeas_rel(f64::EPSILON)
         .static_regularization_constant(f64::EPSILON)
         .dynamic_regularization_eps(f64::EPSILON)
-        .max_iter(u32::MAX); // 最大迭代次数
+        .max_iter(u32::MAX);
 
     constraint_recipe(
         &mut problem,
