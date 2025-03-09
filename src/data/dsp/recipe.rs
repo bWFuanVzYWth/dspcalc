@@ -10,26 +10,34 @@ pub struct Recipe {
     pub time: f64,
 }
 
-// TODO 看看游戏源代码，检查是否有更优雅的写法
 const fn speed_up_scale(point: u64) -> f64 {
     match point {
+        0 => 1.0,
         1 => 1.0 / 1.25,
         2 => 1.0 / 1.5,
         3 => 1.0 / 1.75,
         4 => 1.0 / 2.0,
-        _ => 1.0,
+        _ => panic!("fatal error: un support point!"),
     }
 }
 
-fn create_recipe<F>(
+const fn productive_scale(point: u64) -> f64 {
+    match point {
+        0 => 1.0,
+        1 => 1.125,
+        2 => 1.2,
+        3 => 1.225,
+        4 => 1.25,
+        _ => panic!("fatal error: un support point!"),
+    }
+}
+
+fn create_recipe(
     recipe_item: &RecipeItem,
     point: u64,
-    modify_result_num: F,
+    modify_result_num: impl Fn(f64) -> f64,
     modify_time: impl Fn(f64) -> f64,
-) -> Recipe
-where
-    F: Fn(f64) -> f64,
-{
+) -> Recipe {
     Recipe {
         items: recipe_item
             .items
@@ -63,7 +71,7 @@ fn speed_up(recipe_item: &RecipeItem, point: u64) -> Recipe {
     create_recipe(
         recipe_item,
         point,
-        |num| num, // 不修改结果数量
+        |num| num,
         |time| time * speed_up_scale(point),
     )
 }
@@ -73,7 +81,7 @@ fn productive(recipe_item: &RecipeItem, point: u64) -> Recipe {
         recipe_item,
         point,
         |num| num * productive_scale(point),
-        |time| time, // 不修改时间
+        |time| time,
     )
 }
 
@@ -83,18 +91,6 @@ fn recipes_speed_up(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     }
 }
 
-const fn productive_scale(point: u64) -> f64 {
-    match point {
-        1 => 1.125,
-        2 => 1.2,
-        3 => 1.225,
-        4 => 1.25,
-        _ => 1.0,
-    }
-}
-
-// TODO 耗电量
-
 fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     if !recipe_item.non_productive {
         for point in 1..=4 {
@@ -102,6 +98,8 @@ fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
         }
     }
 }
+
+// TODO 耗电量
 
 fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     recipes.push(Recipe {
