@@ -1,10 +1,7 @@
 use crate::data::dsp::item::Cargo;
 use dspdb::recipe::RecipeItem;
 
-use super::item::{
-    Resource,
-    ResourceType::Direct,
-};
+use super::item::{Resource, ResourceType::Direct};
 
 #[derive(Clone, Debug)]
 pub struct Recipe {
@@ -24,43 +21,66 @@ const fn speed_up_scale(point: u64) -> f64 {
     }
 }
 
-fn speed_up(recipe_item: &RecipeItem, point: u64) -> Recipe {
+fn create_recipe<F>(
+    recipe_item: &RecipeItem,
+    point: u64,
+    modify_result_num: F,
+    modify_time: impl Fn(f64) -> f64,
+) -> Recipe
+where
+    F: Fn(f64) -> f64,
+{
     Recipe {
         items: recipe_item
             .items
             .iter()
             .zip(recipe_item.item_counts.iter())
-            .map(|(item, item_count)| Resource {
+            .map(|(item, count)| Resource {
                 resource_type: Direct(Cargo {
                     item_id: *item,
                     point,
                 }),
-                num: *item_count as f64,
+                num: *count as f64,
             })
             .collect(),
-
         results: recipe_item
             .results
             .iter()
             .zip(recipe_item.result_counts.iter())
-            .map(|(result, result_count)| Resource {
+            .map(|(res, count)| Resource {
                 resource_type: Direct(Cargo {
-                    item_id: *result,
+                    item_id: *res,
                     point: 0,
                 }),
-                num: *result_count as f64,
+                num: modify_result_num(*count as f64),
             })
             .collect(),
-
-        time: recipe_item.time_spend as f64 * speed_up_scale(point),
+        time: modify_time(recipe_item.time_spend as f64),
     }
 }
 
+fn speed_up(recipe_item: &RecipeItem, point: u64) -> Recipe {
+    create_recipe(
+        recipe_item,
+        point,
+        |num| num, // 不修改结果数量
+        |time| time * speed_up_scale(point),
+    )
+}
+
+fn productive(recipe_item: &RecipeItem, point: u64) -> Recipe {
+    create_recipe(
+        recipe_item,
+        point,
+        |num| num * productive_scale(point),
+        |time| time, // 不修改时间
+    )
+}
+
 fn recipes_speed_up(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
-    recipes.push(speed_up(recipe_item, 1));
-    recipes.push(speed_up(recipe_item, 2));
-    recipes.push(speed_up(recipe_item, 3));
-    recipes.push(speed_up(recipe_item, 4));
+    for point in 1..=4 {
+        recipes.push(speed_up(recipe_item, point));
+    }
 }
 
 const fn productive_scale(point: u64) -> f64 {
@@ -75,44 +95,11 @@ const fn productive_scale(point: u64) -> f64 {
 
 // TODO 耗电量
 
-fn productive(recipe_item: &RecipeItem, point: u64) -> Recipe {
-    Recipe {
-        items: recipe_item
-            .items
-            .iter()
-            .zip(recipe_item.item_counts.iter())
-            .map(|(item, item_count)| Resource {
-                resource_type: Direct(Cargo {
-                    item_id: *item,
-                    point,
-                }),
-                num: *item_count as f64,
-            })
-            .collect(),
-
-        results: recipe_item
-            .results
-            .iter()
-            .zip(recipe_item.result_counts.iter())
-            .map(|(result, result_count)| Resource {
-                resource_type: Direct(Cargo {
-                    item_id: *result,
-                    point: 0,
-                }),
-                num: *result_count as f64 * productive_scale(point),
-            })
-            .collect(),
-
-        time: recipe_item.time_spend as f64,
-    }
-}
-
 fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     if !recipe_item.non_productive {
-        recipes.push(productive(recipe_item, 1));
-        recipes.push(productive(recipe_item, 2));
-        recipes.push(productive(recipe_item, 3));
-        recipes.push(productive(recipe_item, 4));
+        for point in 1..=4 {
+            recipes.push(productive(recipe_item, point));
+        }
     }
 }
 
