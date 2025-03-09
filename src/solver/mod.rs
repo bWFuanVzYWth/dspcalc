@@ -26,6 +26,7 @@ fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
         .sum()
 }
 
+/// 构建生产约束：对于每种资源，总产出 ≥ 总消耗
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
@@ -102,19 +103,19 @@ const PROLIFERATOR_TIME: f64 = 2.0;
 fn generate_proliferator_recipe(
     recipes: &mut Vec<Recipe>,
     item_data: &ItemData,
-    mk_level: 增产剂,
-    cargo_points: std::ops::RangeInclusive<u64>,
+    proliferator: 增产剂,
+    cargo_levels: std::ops::RangeInclusive<usize>,
 ) {
-    let proliferator_id = 增产剂::item_id(&mk_level);
-    for cargo_point in cargo_points {
-        for proliferator_point in 0..=4 {
-            let life = 增产剂::life(&mk_level, proliferator_point) as f64;
+    let proliferator_id = 增产剂::item_id(&proliferator);
+    for cargo_level in cargo_levels {
+        for proliferator_level in 0..=4 {
+            let life = 增产剂::life(&proliferator, proliferator_level) as f64;
             recipes.push(Recipe {
                 items: vec![
-                    Resource::from_item_point(item_data.id, 0, STACK),
-                    Resource::from_item_point(proliferator_id, proliferator_point, STACK / life),
+                    Resource::from_item_level(item_data.id, 0, STACK),
+                    Resource::from_item_level(proliferator_id, proliferator_level, STACK / life),
                 ],
-                results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
+                results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
                 time: PROLIFERATOR_TIME,
             });
         }
@@ -122,6 +123,8 @@ fn generate_proliferator_recipe(
 }
 
 // 调用方式
+
+// TODO 把求解过程抽象出来，生成约束的过程也是，这样可以更方便的拓展到其它游戏/mod
 
 // TODO 设置生产设备
 // TODO 传入需求和约束，返回求解过程和结果
@@ -177,7 +180,7 @@ pub fn solve() {
     let need_type = ResourceType::Direct(Cargo {
         item_id: 6006,
         // item_id: 1143,
-        point: 4,
+        level: 4,
     });
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
     let need_frequency = 10000.0;
@@ -209,7 +212,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
                 "{:.6} * {}_{}, ",
                 num * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
-                cargo.point
+                cargo.level
             ),
             ResourceType::Indirect(_indirect_resource) => todo!(),
         });
@@ -224,7 +227,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
                 "{:.6} * {}_{}, ",
                 num * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
-                cargo.point
+                cargo.level
             ),
             ResourceType::Indirect(_indirect_resource) => todo!(),
         });

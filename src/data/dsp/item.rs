@@ -1,4 +1,3 @@
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IndirectResource {
     Power,
@@ -7,7 +6,7 @@ pub enum IndirectResource {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Cargo {
     pub item_id: i16,
-    pub point: u64,
+    pub level: usize,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -23,9 +22,9 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub const fn from_item_point(item_id: i16, point: u64, num: f64) -> Self {
+    pub const fn from_item_level(item_id: i16, level: usize, num: f64) -> Self {
         Resource {
-            resource_type: ResourceType::Direct(Cargo { item_id, point }),
+            resource_type: ResourceType::Direct(Cargo { item_id, level }),
             num,
         }
     }

@@ -1,4 +1,4 @@
-use crate::data::dsp::item::Cargo;
+use crate::{data::dsp::item::Cargo, solver::proliferator::增产剂};
 use dspdb::recipe::RecipeItem;
 
 use super::item::{Resource, ResourceType::Direct};
@@ -10,31 +10,9 @@ pub struct Recipe {
     pub time: f64,
 }
 
-const fn speed_up_scale(point: u64) -> f64 {
-    match point {
-        0 => 1.0,
-        1 => 1.0 / 1.25,
-        2 => 1.0 / 1.5,
-        3 => 1.0 / 1.75,
-        4 => 1.0 / 2.0,
-        _ => panic!("fatal error: un support point!"),
-    }
-}
-
-const fn productive_scale(point: u64) -> f64 {
-    match point {
-        0 => 1.0,
-        1 => 1.125,
-        2 => 1.2,
-        3 => 1.225,
-        4 => 1.25,
-        _ => panic!("fatal error: un support point!"),
-    }
-}
-
 fn create_recipe(
     recipe_item: &RecipeItem,
-    point: u64,
+    level: usize,
     modify_result_num: impl Fn(f64) -> f64,
     modify_time: impl Fn(f64) -> f64,
 ) -> Recipe {
@@ -46,7 +24,7 @@ fn create_recipe(
             .map(|(item, count)| Resource {
                 resource_type: Direct(Cargo {
                     item_id: *item,
-                    point,
+                    level,
                 }),
                 num: *count as f64,
             })
@@ -58,7 +36,7 @@ fn create_recipe(
             .map(|(res, count)| Resource {
                 resource_type: Direct(Cargo {
                     item_id: *res,
-                    point: 0,
+                    level: 0,
                 }),
                 num: modify_result_num(*count as f64),
             })
@@ -67,34 +45,34 @@ fn create_recipe(
     }
 }
 
-fn speed_up(recipe_item: &RecipeItem, point: u64) -> Recipe {
+fn accelerate(recipe_item: &RecipeItem, level: usize) -> Recipe {
     create_recipe(
         recipe_item,
-        point,
+        level,
         |num| num,
-        |time| time * speed_up_scale(point),
+        |time| time / 增产剂::accelerate(level),
     )
 }
 
-fn productive(recipe_item: &RecipeItem, point: u64) -> Recipe {
+fn productive(recipe_item: &RecipeItem, level: usize) -> Recipe {
     create_recipe(
         recipe_item,
-        point,
-        |num| num * productive_scale(point),
+        level,
+        |num| num * 增产剂::increase(level),
         |time| time,
     )
 }
 
-fn recipes_speed_up(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
-    for point in 1..=4 {
-        recipes.push(speed_up(recipe_item, point));
+fn recipes_accelerate(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
+    for level in 1..=4 {
+        recipes.push(accelerate(recipe_item, level));
     }
 }
 
 fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     if !recipe_item.non_productive {
-        for point in 1..=4 {
-            recipes.push(productive(recipe_item, point));
+        for level in 1..=4 {
+            recipes.push(productive(recipe_item, level));
         }
     }
 }
@@ -110,7 +88,7 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
             .map(|(item, item_count)| Resource {
                 resource_type: Direct(Cargo {
                     item_id: *item,
-                    point: 0,
+                    level: 0,
                 }),
                 num: *item_count as f64,
             })
@@ -123,7 +101,7 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
             .map(|(result, result_count)| Resource {
                 resource_type: Direct(Cargo {
                     item_id: *result,
-                    point: 0,
+                    level: 0,
                 }),
                 num: *result_count as f64,
             })
@@ -138,7 +116,7 @@ pub fn flatten_recipes(basic_recipes: &[RecipeItem]) -> Vec<Recipe> {
     basic_recipes.iter().for_each(|recipe_item| {
         recipe_vanilla(&mut recipes, recipe_item);
         recipes_productive(&mut recipes, recipe_item);
-        recipes_speed_up(&mut recipes, recipe_item);
+        recipes_accelerate(&mut recipes, recipe_item);
     });
     recipes
 }
