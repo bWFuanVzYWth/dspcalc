@@ -15,7 +15,7 @@ use crate::{
         item::{Resource, ResourceType},
         recipe::{flatten_recipes, Recipe},
     },
-    error::DspCalError::{self, LpSolverError},
+    error::DspCalError::{self, *},
 };
 use dspdb::{
     item::{items, ItemData},
@@ -90,36 +90,44 @@ fn constraint_recipe(
     recipe_vars: &bimap::BiHashMap<usize, Variable>,
     production: &ResourceType,
 ) -> Result<(), DspCalError> {
+    // 处理生产表达式
     let production_expr: Expression = recipes
         .iter()
         .enumerate()
         .map(|(i, recipe)| {
-            recipe
+            // 获取变量，若失败则返回错误
+            let variable = *recipe_vars.get_by_left(&i).ok_or(UnknownLpVarId(i))?;
+            // 计算当前recipe的贡献
+            let expr = recipe
                 .results
                 .iter()
                 .filter(|res| res.resource_type == *production)
-                .map(|_| {
-                    let var = *recipe_vars.get_by_left(&i).unwrap();
-                    var * stack(&recipe.results, production) / recipe.time
-                })
-                .sum::<Expression>()
+                .map(|_| variable * stack(&recipe.results, production) / recipe.time)
+                .sum::<Expression>();
+            // TODO 这个闭包里的异常处理感觉逻辑上有点绕，可以考虑优化一下
+            // TODO 这里两个表达式的构建都有点重复，检查是否有必要抽象出共同的结构
+            Ok(expr)
         })
+        .collect::<Result<Vec<Expression>, _>>()?
+        .into_iter()
         .sum();
 
+    // 处理资源消耗表达式
     let resource_expr: Expression = recipes
         .iter()
         .enumerate()
         .map(|(i, recipe)| {
-            recipe
+            let var = *recipe_vars.get_by_left(&i).ok_or(UnknownLpVarId(i))?;
+            let expr = recipe
                 .items
                 .iter()
                 .filter(|res| res.resource_type == *production)
-                .map(|_| {
-                    let var = *recipe_vars.get_by_left(&i).unwrap();
-                    var * stack(&recipe.items, production) / recipe.time
-                })
-                .sum::<Expression>()
+                .map(|_| var * stack(&recipe.items, production) / recipe.time)
+                .sum::<Expression>();
+            Ok(expr)
         })
+        .collect::<Result<Vec<Expression>, _>>()?
+        .into_iter()
         .sum();
 
     problem.add_constraint(production_expr.geq(resource_expr));
@@ -145,8 +153,6 @@ fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression 
         .map(|(_, variable)| *variable)
         .sum::<Expression>()
 }
-
-
 
 // TODO 把求解过程抽象出来，生成约束的过程也是，这样可以更方便的拓展到其它游戏/mod
 
@@ -186,16 +192,9 @@ pub fn solve(
     let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, needs);
 
     let clarabel_solution = problem.solve().map_err(LpSolverError)?;
-    let solution = from_clarabel_solution(&recipes_frequency, &all_recipes, &clarabel_solution);
-    Ok(solution)
-    // let solution = solve.unwrap(); // FIXME 异常处理
+    let solution = from_clarabel_solution(&recipes_frequency, &all_recipes, &clarabel_solution)?;
 
-    // all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-    //     let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
-    //     if num > f64::from(f32::EPSILON) {
-    //         print_recipe(num, recipe, &raw_items.data_array);
-    //     }
-    // });
+    Ok(solution)
 }
 
 pub struct CalculatorSolution {
@@ -207,10 +206,11 @@ pub fn from_clarabel_solution(
     recipes_frequency: &BiHashMap<usize, Variable>,
     all_recipes: &[Recipe],
     clarabel_solution: &ClarabelSolution,
-) -> Vec<CalculatorSolution> {
+) -> Result<Vec<CalculatorSolution>, DspCalError> {
     let mut solutions = Vec::new();
     for (i, recipe) in all_recipes.iter().enumerate() {
-        let num = clarabel_solution.value(*recipes_frequency.get_by_left(&i).unwrap());
+        let num =
+            clarabel_solution.value(*recipes_frequency.get_by_left(&i).ok_or(UnknownLpVarId(i))?);
         if num > f64::from(f32::EPSILON) {
             let solution = CalculatorSolution {
                 recipe: recipe.clone(),
@@ -219,7 +219,7 @@ pub fn from_clarabel_solution(
             solutions.push(solution);
         }
     }
-    solutions
+    Ok(solutions)
 }
 
 fn config_solver(problem: &mut ClarabelProblem) {
