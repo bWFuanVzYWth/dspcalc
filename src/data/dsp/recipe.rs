@@ -63,15 +63,17 @@ fn productive(recipe_item: &RecipeItem, level: usize) -> Recipe {
     )
 }
 
+const MK3_INC_LEVEL: usize = Proliferator::inc_level(&Proliferator::MK3);
+
 fn recipes_accelerate(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
-    for level in 1..=4 {
+    for level in 1..=MK3_INC_LEVEL {
         recipes.push(accelerate(recipe_item, level));
     }
 }
 
 fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     if !recipe_item.non_productive {
-        for level in 1..=4 {
+        for level in 1..=MK3_INC_LEVEL {
             recipes.push(productive(recipe_item, level));
         }
     }

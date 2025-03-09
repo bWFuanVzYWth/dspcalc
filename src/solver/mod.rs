@@ -8,9 +8,12 @@ use good_lp::{
     variables, Expression, Solution, SolverModel, Variable,
 };
 
-use crate::data::dsp::{
-    item::{Resource, ResourceType},
-    recipe::{flatten_recipes, Recipe},
+use crate::{
+    data::dsp::{
+        item::{Resource, ResourceType},
+        recipe::{flatten_recipes, Recipe},
+    },
+    error::DspCalError,
 };
 use dspdb::{
     item::{items, ItemData},
@@ -84,7 +87,7 @@ fn constraint_recipe(
     recipes: &[Recipe],
     recipe_vars: &bimap::BiHashMap<usize, Variable>,
     production: &ResourceType,
-) {
+) -> Result<(), DspCalError> {
     let production_expr: Expression = recipes
         .iter()
         .enumerate()
@@ -118,6 +121,8 @@ fn constraint_recipe(
         .sum();
 
     problem.add_constraint(production_expr.geq(resource_expr));
+
+    Ok(())
 }
 
 fn constraint_recipes(
@@ -125,10 +130,11 @@ fn constraint_recipes(
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
     recipe_vars: &BiMap<usize, Variable>,
-) {
+) -> Result<(), DspCalError> {
     for production in all_productions.iter() {
-        constraint_recipe(problem, recipes, recipe_vars, production);
+        constraint_recipe(problem, recipes, recipe_vars, production)?;
     }
+    Ok(())
 }
 
 fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression {
@@ -190,7 +196,7 @@ fn generate_proliferator_recipe(
 
 // TODO 设置生产设备
 // TODO 传入约束，返回求解过程和结果
-pub fn solve(needs: &[Resource], mines: &[ResourceType]) {
+pub fn solve(needs: &[Resource], mines: &[ResourceType]) -> Result<(), DspCalError> {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
@@ -220,6 +226,31 @@ pub fn solve(needs: &[Resource], mines: &[ResourceType]) {
     let mut problem = model.minimise(objective).using(clarabel);
 
     // 设置线性规划求解精度
+    config_solver(&mut problem);
+
+    constraint_recipes(
+        &mut problem,
+        &all_recipes,
+        &all_productions,
+        &recipes_frequency,
+    )?;
+
+    let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, needs);
+
+    let solve = problem.solve();
+    let solution = solve.unwrap(); // FIXME 异常处理
+
+    all_recipes.iter().enumerate().for_each(|(i, recipe)| {
+        let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
+        if num > f64::from(f32::EPSILON) {
+            print_recipe(num, recipe, &raw_items.data_array);
+        }
+    });
+
+    Ok(())
+}
+
+fn config_solver(problem: &mut ClarabelProblem) {
     problem
         .settings()
         .verbose(true) // 启用详细输出
@@ -231,24 +262,6 @@ pub fn solve(needs: &[Resource], mines: &[ResourceType]) {
         .static_regularization_constant(f64::EPSILON)
         .dynamic_regularization_eps(f64::EPSILON)
         .max_iter(u32::MAX);
-
-    constraint_recipes(
-        &mut problem,
-        &all_recipes,
-        &all_productions,
-        &recipes_frequency,
-    );
-
-    let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, needs);
-
-    let solution = problem.solve().unwrap(); // FIXME 异常处理
-
-    all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-        let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
-        if num > f64::from(f32::EPSILON) {
-            print_recipe(num, recipe, &raw_items.data_array);
-        }
-    });
 }
 
 fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
