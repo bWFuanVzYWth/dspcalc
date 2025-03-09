@@ -87,8 +87,6 @@ fn main() {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
-    // TODO 设置生产设备
-
     let mut mines = Vec::new();
     for item in &raw_items.data_array {
         if is_mine(item) {

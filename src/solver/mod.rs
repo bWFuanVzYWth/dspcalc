@@ -141,6 +141,7 @@ fn constraint_recipes(
 }
 
 fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression {
+    // TODO 读取生产设备，计算速度倍率，现在这个只能计算1x倍率的最小化建筑
     recipe_vars
         .iter()
         .map(|(_, variable)| *variable)
