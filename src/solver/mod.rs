@@ -89,9 +89,9 @@ fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
     items_data.iter().for_each(|item_data| {
-        proliferator_mk3(&mut recipes, item_data);
-        proliferator_mk2(&mut recipes, item_data);
-        proliferator_mk1(&mut recipes, item_data);
+        generate_proliferator_recipe(&mut recipes, item_data, 增产剂::MK3, 1..=4);
+        generate_proliferator_recipe(&mut recipes, item_data, 增产剂::MK2, 1..=2);
+        generate_proliferator_recipe(&mut recipes, item_data, 增产剂::MK1, 1..=1);
     });
     recipes
 }
@@ -99,61 +99,29 @@ fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
 const STACK: f64 = 4.0;
 const PROLIFERATOR_TIME: f64 = 2.0;
 
-fn proliferator_mk3(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
-    (1..=4).for_each(|cargo_point| {
-        (0..=4).for_each(|proliferator_point| {
+fn generate_proliferator_recipe(
+    recipes: &mut Vec<Recipe>,
+    item_data: &ItemData,
+    mk_level: 增产剂,
+    cargo_points: std::ops::RangeInclusive<u64>,
+) {
+    let proliferator_id = 增产剂::item_id(&mk_level);
+    for cargo_point in cargo_points {
+        for proliferator_point in 0..=4 {
+            let life = 增产剂::life(&mk_level, proliferator_point) as f64;
             recipes.push(Recipe {
                 items: vec![
                     Resource::from_item_point(item_data.id, 0, STACK),
-                    Resource::from_item_point(
-                        增产剂::MK3 as i16,
-                        proliferator_point,
-                        STACK / (增产剂::life(&增产剂::MK3, proliferator_point) as f64),
-                    ),
+                    Resource::from_item_point(proliferator_id, proliferator_point, STACK / life),
                 ],
                 results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
                 time: PROLIFERATOR_TIME,
             });
-        });
-    });
+        }
+    }
 }
 
-fn proliferator_mk2(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
-    (1..=2).for_each(|cargo_point| {
-        (0..=4).for_each(|proliferator_point| {
-            recipes.push(Recipe {
-                items: vec![
-                    Resource::from_item_point(item_data.id, 0, STACK),
-                    Resource::from_item_point(
-                        增产剂::MK2 as i16,
-                        proliferator_point,
-                        STACK / (增产剂::life(&增产剂::MK2, proliferator_point) as f64),
-                    ),
-                ],
-                results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
-                time: PROLIFERATOR_TIME,
-            });
-        });
-    });
-}
-
-fn proliferator_mk1(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
-    const CARGO_POINT: u64 = 1;
-    (0..=4).for_each(|proliferator_point| {
-        recipes.push(Recipe {
-            items: vec![
-                Resource::from_item_point(item_data.id, 0, STACK),
-                Resource::from_item_point(
-                    增产剂::MK1 as i16,
-                    proliferator_point,
-                    STACK / (增产剂::life(&增产剂::MK1, proliferator_point) as f64),
-                ),
-            ],
-            results: vec![Resource::from_item_point(item_data.id, CARGO_POINT, STACK)],
-            time: PROLIFERATOR_TIME,
-        });
-    });
-}
+// 调用方式
 
 // TODO 设置生产设备
 // TODO 传入需求和约束，返回求解过程和结果

@@ -1,10 +1,19 @@
+#[derive(Clone)]
 pub enum 增产剂 {
-    MK1 = 1141,
-    MK2 = 1142,
-    MK3 = 1143,
+    MK1,
+    MK2,
+    MK3,
 }
 
 impl 增产剂 {
+    pub const fn item_id(t: &Self) -> i16 {
+        match t {
+            增产剂::MK1 => 1141,
+            增产剂::MK2 => 1142,
+            增产剂::MK3 => 1143,
+        }
+    }
+
     pub const fn point(t: &Self) -> u64 {
         match t {
             增产剂::MK1 => 1,
