@@ -13,15 +13,10 @@ use good_lp::{
 use crate::{
     data::dsp::{
         item::{Resource, ResourceType},
-        recipe::{flatten_recipes, Recipe},
+        recipe::Recipe,
     },
     error::DspCalError::{self, *},
 };
-use dspdb::{
-    item::{items, ItemData},
-    recipe::{self},
-};
-use proliferator::Proliferator;
 
 fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
     items
@@ -184,15 +179,15 @@ pub fn solve(
 
     constraint_recipes(
         &mut problem,
-        &all_recipes,
-        &all_productions,
+        all_recipes,
+        all_productions,
         &recipes_frequency,
     )?;
 
-    let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, needs);
+    let _constraint_need = constraint_needs(all_recipes, &recipes_frequency, &mut problem, needs);
 
     let clarabel_solution = problem.solve().map_err(LpSolverError)?;
-    let solution = from_clarabel_solution(&recipes_frequency, &all_recipes, &clarabel_solution)?;
+    let solution = from_clarabel_solution(&recipes_frequency, all_recipes, &clarabel_solution)?;
 
     Ok(solution)
 }
