@@ -111,12 +111,13 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     });
 }
 
+#[must_use]
 pub fn flatten_recipes(basic_recipes: &[RecipeItem]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
-    basic_recipes.iter().for_each(|recipe_item| {
+    for recipe_item in basic_recipes.iter() {
         recipe_vanilla(&mut recipes, recipe_item);
         recipes_productive(&mut recipes, recipe_item);
         recipes_accelerate(&mut recipes, recipe_item);
-    });
+    }
     recipes
 }

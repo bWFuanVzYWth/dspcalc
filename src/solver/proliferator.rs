@@ -18,39 +18,45 @@ const POWER_TABLE: [f64; INC_LEVEL_MAX + 1] =
     [1.0, 1.3, 1.7, 2.1, 2.5, 2.9, 3.3, 3.7, 4.1, 4.5, 4.9];
 
 impl Proliferator {
+    #[must_use]
     pub const fn item_id(t: &Self) -> i16 {
         match t {
-            Proliferator::MK1 => 1141,
-            Proliferator::MK2 => 1142,
-            Proliferator::MK3 => 1143,
+            Self::MK1 => 1141,
+            Self::MK2 => 1142,
+            Self::MK3 => 1143,
         }
     }
 
+    #[must_use]
     pub const fn inc_level(t: &Self) -> usize {
         match t {
-            Proliferator::MK1 => 1,
-            Proliferator::MK2 => 2,
-            Proliferator::MK3 => 4,
+            Self::MK1 => 1,
+            Self::MK2 => 2,
+            Self::MK3 => 4,
         }
     }
 
+    #[must_use]
     pub const fn life(t: &Self, level: usize) -> usize {
         (Self::increase(level)
             * match t {
-                Proliferator::MK1 => 12.0,
-                Proliferator::MK2 => 24.0,
-                Proliferator::MK3 => 60.0,
+                Self::MK1 => 12.0,
+                Self::MK2 => 24.0,
+                Self::MK3 => 60.0,
             }) as usize
     }
 
+    #[must_use]
     pub const fn increase(level: usize) -> f64 {
         1.0 + INC_TABLE[level]
     }
 
+    #[must_use]
     pub const fn accelerate(level: usize) -> f64 {
         1.0 + ACC_TABLE[level]
     }
 
+    #[must_use]
     pub const fn power(level: usize) -> f64 {
         POWER_TABLE[level]
     }

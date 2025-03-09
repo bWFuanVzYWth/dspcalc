@@ -22,22 +22,25 @@ pub struct Resource {
 }
 
 impl Resource {
+    #[must_use]
     pub const fn from_item_level(item_id: i16, level: usize, num: f64) -> Self {
-        Resource {
+        Self {
             resource_type: ResourceType::Direct(Cargo { item_id, level }),
             num,
         }
     }
 
+    #[must_use]
     pub const fn area(num: f64) -> Self {
-        Resource {
+        Self {
             resource_type: ResourceType::Indirect(IndirectResource::Area),
             num,
         }
     }
 
+    #[must_use]
     pub const fn power(num: f64) -> Self {
-        Resource {
+        Self {
             resource_type: ResourceType::Indirect(IndirectResource::Power),
             num,
         }

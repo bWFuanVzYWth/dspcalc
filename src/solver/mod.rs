@@ -126,9 +126,9 @@ fn constraint_recipes(
     all_productions: &HashSet<ResourceType>,
     recipe_vars: &BiMap<usize, Variable>,
 ) {
-    all_productions.iter().for_each(|production| {
+    for production in all_productions.iter() {
         constraint_recipe(problem, recipes, recipe_vars, production);
-    });
+    }
 }
 
 fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression {
@@ -140,21 +140,21 @@ fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression 
 
 fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
     let mut items_type = HashSet::new();
-    recipes.iter().for_each(|recipe| {
-        recipe.results.iter().for_each(|product| {
+    for recipe in recipes.iter() {
+        for product in recipe.results.iter() {
             items_type.insert(product.resource_type);
-        });
-    });
+        }
+    }
     items_type
 }
 
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
-    items_data.iter().for_each(|item_data| {
-        generate_proliferator_recipe(&mut recipes, item_data, Proliferator::MK3);
-        generate_proliferator_recipe(&mut recipes, item_data, Proliferator::MK2);
-        generate_proliferator_recipe(&mut recipes, item_data, Proliferator::MK1);
-    });
+    for item_data in items_data.iter() {
+        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK3);
+        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK2);
+        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK1);
+    }
     recipes
 }
 
@@ -164,17 +164,17 @@ const PROLIFERATOR_TIME: f64 = 2.0;
 fn generate_proliferator_recipe(
     recipes: &mut Vec<Recipe>,
     item_data: &ItemData,
-    proliferator: Proliferator,
+    proliferator: &Proliferator,
 ) {
     const INC_LEVEL_MK3: usize = Proliferator::inc_level(&Proliferator::MK3);
-    for cargo_level in 1..=Proliferator::inc_level(&proliferator) {
+    for cargo_level in 1..=Proliferator::inc_level(proliferator) {
         for proliferator_level in 0..=INC_LEVEL_MK3 {
-            let life = Proliferator::life(&proliferator, proliferator_level) as f64;
+            let life = Proliferator::life(proliferator, proliferator_level) as f64;
             recipes.push(Recipe {
                 items: vec![
                     Resource::from_item_level(item_data.id, 0, STACK),
                     Resource::from_item_level(
-                        Proliferator::item_id(&proliferator),
+                        Proliferator::item_id(proliferator),
                         proliferator_level,
                         STACK / life,
                     ),
@@ -190,7 +190,7 @@ fn generate_proliferator_recipe(
 
 // TODO 设置生产设备
 // TODO 传入约束，返回求解过程和结果
-pub fn solve(needs: &[Resource]) {
+pub fn solve(needs: &[Resource], mines: &[ResourceType]) {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
@@ -239,7 +239,7 @@ pub fn solve(needs: &[Resource]) {
         &recipes_frequency,
     );
 
-    let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, &needs);
+    let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, needs);
 
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 

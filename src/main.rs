@@ -18,6 +18,7 @@ fn main() {
     };
 
     let needs = vec![need_white_cube, need_proliferator_mk3];
+    let mines = Vec::new();
 
-    factory_calculator::solver::solve(&needs);
+    factory_calculator::solver::solve(&needs, &mines);
 }
