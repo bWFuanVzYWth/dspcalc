@@ -1,4 +1,23 @@
+use factory_calculator::data::dsp::item::{Cargo, Resource, ResourceType};
+
 fn main() {
-    // 输入输出
-    factory_calculator::solver::solve();
+    let need_white_cube = Resource {
+        resource_type: ResourceType::Direct(Cargo {
+            item_id: 6006,
+            level: 4,
+        }),
+        num: 10000.0,
+    };
+
+    let need_proliferator_mk3 = Resource {
+        resource_type: ResourceType::Direct(Cargo {
+            item_id: 1143,
+            level: 4,
+        }),
+        num: 10000.0,
+    };
+
+    let needs = vec![need_white_cube, need_proliferator_mk3];
+
+    factory_calculator::solver::solve(&needs);
 }

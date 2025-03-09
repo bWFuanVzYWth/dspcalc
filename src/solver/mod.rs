@@ -4,12 +4,12 @@ use std::collections::HashSet;
 
 use bimap::BiMap;
 use good_lp::{
-    clarabel, solvers::clarabel::ClarabelProblem, variable, variables, Expression, Solution,
-    SolverModel, Variable,
+    clarabel, constraint::ConstraintReference, solvers::clarabel::ClarabelProblem, variable,
+    variables, Expression, Solution, SolverModel, Variable,
 };
 
 use crate::data::dsp::{
-    item::{Cargo, Resource, ResourceType},
+    item::{Resource, ResourceType},
     recipe::{flatten_recipes, Recipe},
 };
 use dspdb::{
@@ -65,10 +65,17 @@ fn constraint_needs(
     recipes_frequency: &BiMap<usize, Variable>,
     problem: &mut ClarabelProblem,
     needs: &[Resource],
-) {
+) -> Vec<ConstraintReference> {
+    let mut constraints = Vec::new();
     for need in needs {
-        constraint_need(all_recipes, recipes_frequency, problem, *need);
+        constraints.push(constraint_need(
+            all_recipes,
+            recipes_frequency,
+            problem,
+            *need,
+        ));
     }
+    constraints
 }
 
 /// 构建生产约束：对于每种资源，总产出 ≥ 总消耗
@@ -179,13 +186,11 @@ fn generate_proliferator_recipe(
     }
 }
 
-// 调用方式
-
 // TODO 把求解过程抽象出来，生成约束的过程也是，这样可以更方便的拓展到其它游戏/mod
 
 // TODO 设置生产设备
-// TODO 传入需求和约束，返回求解过程和结果
-pub fn solve() {
+// TODO 传入约束，返回求解过程和结果
+pub fn solve(needs: &[Resource]) {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
@@ -234,29 +239,13 @@ pub fn solve() {
         &recipes_frequency,
     );
 
-    let need_type = ResourceType::Direct(Cargo {
-        item_id: 6006,
-        // item_id: 1143,
-        level: 4,
-    });
-
-    let need = Resource {
-        resource_type: need_type,
-        num: 10000.0,
-    };
-
-    let needs = vec![need];
-
-    assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
-    let need_frequency = 10000.0;
-
     let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, &needs);
 
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
         let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
-        if num > need_frequency * f64::from(f32::EPSILON) {
+        if num > f64::from(f32::EPSILON) {
             print_recipe(num, recipe, &raw_items.data_array);
         }
     });
