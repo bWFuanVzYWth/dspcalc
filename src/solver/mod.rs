@@ -26,47 +26,101 @@ fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
         .sum()
 }
 
+/// 构建需求约束：对于每种净需求，总产出 - 总消耗 ≥ 净需求
+fn constraint_need(
+    all_recipes: &[Recipe],
+    recipes_frequency: &BiMap<usize, Variable>,
+    problem: &mut ClarabelProblem,
+    need: Resource,
+) -> good_lp::constraint::ConstraintReference {
+    let items = recipes_frequency
+        .iter()
+        .map(|(recipes_index, variable)| {
+            all_recipes[*recipes_index]
+                .items
+                .iter()
+                .filter(|product| product.resource_type == need.resource_type)
+                .map(|product| (product.num / all_recipes[*recipes_index].time) * (*variable))
+                .sum::<Expression>()
+        })
+        .sum::<Expression>();
+
+    let results = recipes_frequency
+        .iter()
+        .map(|(recipes_index, variable)| {
+            all_recipes[*recipes_index]
+                .results
+                .iter()
+                .filter(|product| product.resource_type == need.resource_type)
+                .map(|product| (product.num / all_recipes[*recipes_index].time) * (*variable))
+                .sum::<Expression>()
+        })
+        .sum::<Expression>();
+
+    problem.add_constraint((results - items).geq(need.num))
+}
+
+fn constraint_needs(
+    all_recipes: &[Recipe],
+    recipes_frequency: &BiMap<usize, Variable>,
+    problem: &mut ClarabelProblem,
+    needs: &[Resource],
+) {
+    for need in needs {
+        constraint_need(all_recipes, recipes_frequency, problem, *need);
+    }
+}
+
 /// 构建生产约束：对于每种资源，总产出 ≥ 总消耗
 fn constraint_recipe(
+    problem: &mut ClarabelProblem,
+    recipes: &[Recipe],
+    recipe_vars: &bimap::BiHashMap<usize, Variable>,
+    production: &ResourceType,
+) {
+    let production_expr: Expression = recipes
+        .iter()
+        .enumerate()
+        .map(|(i, recipe)| {
+            recipe
+                .results
+                .iter()
+                .filter(|res| res.resource_type == *production)
+                .map(|_| {
+                    let var = *recipe_vars.get_by_left(&i).unwrap();
+                    var * stack(&recipe.results, production) / recipe.time
+                })
+                .sum::<Expression>()
+        })
+        .sum();
+
+    let resource_expr: Expression = recipes
+        .iter()
+        .enumerate()
+        .map(|(i, recipe)| {
+            recipe
+                .items
+                .iter()
+                .filter(|res| res.resource_type == *production)
+                .map(|_| {
+                    let var = *recipe_vars.get_by_left(&i).unwrap();
+                    var * stack(&recipe.items, production) / recipe.time
+                })
+                .sum::<Expression>()
+        })
+        .sum();
+
+    problem.add_constraint(production_expr.geq(resource_expr));
+}
+
+fn constraint_recipes(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
     recipe_vars: &BiMap<usize, Variable>,
 ) {
     all_productions.iter().for_each(|production| {
-        let production_expr: Expression = recipes
-            .iter()
-            .enumerate()
-            .map(|(i, recipe)| {
-                recipe
-                    .results
-                    .iter()
-                    .filter(|res| res.resource_type == *production)
-                    .map(|_| {
-                        let var = *recipe_vars.get_by_left(&i).unwrap();
-                        var * stack(&recipe.results, production) / recipe.time
-                    })
-                    .sum::<Expression>()
-            })
-            .sum();
-
-        let resource_expr: Expression = recipes
-            .iter()
-            .enumerate()
-            .map(|(i, recipe)| {
-                recipe
-                    .items
-                    .iter()
-                    .filter(|res| res.resource_type == *production)
-                    .map(|_| {
-                        let var = *recipe_vars.get_by_left(&i).unwrap();
-                        var * stack(&recipe.items, production) / recipe.time
-                    })
-                    .sum::<Expression>()
-            })
-            .sum();
-
-        problem.add_constraint(production_expr.geq(resource_expr));
+        constraint_recipe(problem, recipes, recipe_vars, production);
     });
 }
 
@@ -104,16 +158,19 @@ fn generate_proliferator_recipe(
     recipes: &mut Vec<Recipe>,
     item_data: &ItemData,
     proliferator: Proliferator,
-    // cargo_levels: std::ops::RangeInclusive<usize>,
 ) {
-    let proliferator_id = Proliferator::item_id(&proliferator);
+    const INC_LEVEL_MK3: usize = Proliferator::inc_level(&Proliferator::MK3);
     for cargo_level in 1..=Proliferator::inc_level(&proliferator) {
-        for proliferator_level in 0..=4 {
+        for proliferator_level in 0..=INC_LEVEL_MK3 {
             let life = Proliferator::life(&proliferator, proliferator_level) as f64;
             recipes.push(Recipe {
                 items: vec![
                     Resource::from_item_level(item_data.id, 0, STACK),
-                    Resource::from_item_level(proliferator_id, proliferator_level, STACK / life),
+                    Resource::from_item_level(
+                        Proliferator::item_id(&proliferator),
+                        proliferator_level,
+                        STACK / life,
+                    ),
                 ],
                 results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
                 time: PROLIFERATOR_TIME,
@@ -170,7 +227,7 @@ pub fn solve() {
         .dynamic_regularization_eps(f64::EPSILON)
         .max_iter(u32::MAX);
 
-    constraint_recipe(
+    constraint_recipes(
         &mut problem,
         &all_recipes,
         &all_productions,
@@ -182,16 +239,18 @@ pub fn solve() {
         // item_id: 1143,
         level: 4,
     });
+
+    let need = Resource {
+        resource_type: need_type,
+        num: 10000.0,
+    };
+
+    let needs = vec![need];
+
     assert!(all_productions.contains(&need_type)); // FIXME 确保待求解的物品存在，但是不要崩溃
     let need_frequency = 10000.0;
 
-    let _constraint_need = constraint_need(
-        &all_recipes,
-        &recipes_frequency,
-        &mut problem,
-        need_type,
-        need_frequency,
-    );
+    let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, &needs);
 
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 
@@ -242,27 +301,4 @@ fn item_name(item_id: i16, items: &[ItemData]) -> String {
         .unwrap()
         .name
         .clone()
-}
-
-fn constraint_need(
-    all_recipes: &[Recipe],
-    recipes_frequency: &BiMap<usize, Variable>,
-    problem: &mut ClarabelProblem,
-    need_type: ResourceType,
-    need_num: f64,
-) -> good_lp::constraint::ConstraintReference {
-    problem.add_constraint(
-        recipes_frequency
-            .iter()
-            .map(|(recipes_index, variable)| {
-                all_recipes[*recipes_index]
-                    .results
-                    .iter()
-                    .filter(|product| product.resource_type == need_type)
-                    .map(|product| (product.num / all_recipes[*recipes_index].time) * (*variable))
-                    .sum::<Expression>()
-            })
-            .sum::<Expression>()
-            .geq(need_num),
-    )
 }
