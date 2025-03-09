@@ -1,12 +1,12 @@
 cargo-features = ["profile-rustflags"]
 
 [package]
-name = "factory_calculator"
+name = "dspcalc"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "factory_calculator"
+name = "dspcalc"
 path = "src/lib.rs"
 
 [dependencies]

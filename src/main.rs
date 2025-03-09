@@ -4,7 +4,7 @@ use dspdb::{
     item::{items, ItemData},
     recipe,
 };
-use factory_calculator::{
+use dspcalc::{
     data::dsp::{
         item::{
             Cargo, Resource,
@@ -119,7 +119,7 @@ fn main() {
 
     // FIXME 消除这个unwarp
     let solutions =
-        factory_calculator::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
+        dspcalc::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe, &raw_items.data_array);
     }

@@ -114,6 +114,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dspcalc"
+version = "0.1.0"
+dependencies = [
+ "bimap",
+ "dspdb",
+ "good_lp",
+ "num",
+ "strum",
+ "strum_macros",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "dspdb"
 version = "0.1.0"
 source = "git+https://github.com/bWFuanVzYWth/dspdb?branch=master#f7f1fc58171f56a63dbdd365163c908b9e683523"
@@ -138,19 +151,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.99",
-]
-
-[[package]]
-name = "factory_calculator"
-version = "0.1.0"
-dependencies = [
- "bimap",
- "dspdb",
- "good_lp",
- "num",
- "strum",
- "strum_macros",
- "thiserror 2.0.12",
 ]
 
 [[package]]
