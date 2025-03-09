@@ -4,4 +4,6 @@ use thiserror::Error;
 pub enum DspCalError {
     #[error("unknown bi map")]
     UnknownBiMap,
+    #[error("lp solver error: ")]
+    LpSolverError(good_lp::ResolutionError)
 }

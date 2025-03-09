@@ -2,10 +2,12 @@ pub mod proliferator;
 
 use std::collections::HashSet;
 
-use bimap::BiMap;
+use bimap::{BiHashMap, BiMap};
 use good_lp::{
-    clarabel, constraint::ConstraintReference, solvers::clarabel::ClarabelProblem, variable,
-    variables, Expression, Solution, SolverModel, Variable,
+    clarabel,
+    constraint::ConstraintReference,
+    solvers::clarabel::{ClarabelProblem, ClarabelSolution},
+    variable, variables, Expression, Solution, SolverModel, Variable,
 };
 
 use crate::{
@@ -13,7 +15,7 @@ use crate::{
         item::{Resource, ResourceType},
         recipe::{flatten_recipes, Recipe},
     },
-    error::DspCalError,
+    error::DspCalError::{self, LpSolverError},
 };
 use dspdb::{
     item::{items, ItemData},
@@ -144,73 +146,19 @@ fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression 
         .sum::<Expression>()
 }
 
-fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
-    let mut items_type = HashSet::new();
-    for recipe in recipes.iter() {
-        for product in recipe.results.iter() {
-            items_type.insert(product.resource_type);
-        }
-    }
-    items_type
-}
 
-fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
-    let mut recipes = Vec::new();
-    for item_data in items_data.iter() {
-        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK3);
-        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK2);
-        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK1);
-    }
-    recipes
-}
-
-const STACK: f64 = 4.0;
-const PROLIFERATOR_TIME: f64 = 2.0;
-
-fn generate_proliferator_recipe(
-    recipes: &mut Vec<Recipe>,
-    item_data: &ItemData,
-    proliferator: &Proliferator,
-) {
-    const INC_LEVEL_MK3: usize = Proliferator::inc_level(&Proliferator::MK3);
-    for cargo_level in 1..=Proliferator::inc_level(proliferator) {
-        for proliferator_level in 0..=INC_LEVEL_MK3 {
-            let life = Proliferator::life(proliferator, proliferator_level) as f64;
-            recipes.push(Recipe {
-                items: vec![
-                    Resource::from_item_level(item_data.id, 0, STACK),
-                    Resource::from_item_level(
-                        Proliferator::item_id(proliferator),
-                        proliferator_level,
-                        STACK / life,
-                    ),
-                ],
-                results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
-                time: PROLIFERATOR_TIME,
-            });
-        }
-    }
-}
 
 // TODO 把求解过程抽象出来，生成约束的过程也是，这样可以更方便的拓展到其它游戏/mod
 
 // TODO 设置生产设备
 // TODO 传入约束，返回求解过程和结果
-pub fn solve(needs: &[Resource], mines: &[ResourceType]) -> Result<(), DspCalError> {
-    let raw_recipes = recipe::recipes();
-    let raw_items = items();
-
-    // TODO 原矿化、采矿公式
-
-    // 展平所有基础公式
-    let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
-    // 所有的喷涂公式
-    let proliferator_recipes = proliferator_recipes(&raw_items.data_array);
-
-    // 找出所有在公式中出现过的资源
-    let all_recipes = [flatten_basic_recipes, proliferator_recipes].concat();
-    let all_productions = find_all_production(&all_recipes);
-
+// FIXME 库无关的返回类型
+pub fn solve(
+    all_recipes: &[Recipe],
+    all_productions: &HashSet<ResourceType>,
+    needs: &[Resource],
+    mines: &[ResourceType],
+) -> Result<Vec<CalculatorSolution>, DspCalError> {
     // 定义变量，每个变量代表一个公式的调用次数
     let mut recipes_frequency = bimap::BiMap::new();
     let mut model = variables!();
@@ -237,17 +185,41 @@ pub fn solve(needs: &[Resource], mines: &[ResourceType]) -> Result<(), DspCalErr
 
     let _constraint_need = constraint_needs(&all_recipes, &recipes_frequency, &mut problem, needs);
 
-    let solve = problem.solve();
-    let solution = solve.unwrap(); // FIXME 异常处理
+    let clarabel_solution = problem.solve().map_err(LpSolverError)?;
+    let solution = from_clarabel_solution(&recipes_frequency, &all_recipes, &clarabel_solution);
+    Ok(solution)
+    // let solution = solve.unwrap(); // FIXME 异常处理
 
-    all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-        let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
+    // all_recipes.iter().enumerate().for_each(|(i, recipe)| {
+    //     let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
+    //     if num > f64::from(f32::EPSILON) {
+    //         print_recipe(num, recipe, &raw_items.data_array);
+    //     }
+    // });
+}
+
+pub struct CalculatorSolution {
+    pub recipe: Recipe,
+    pub num: f64,
+}
+
+pub fn from_clarabel_solution(
+    recipes_frequency: &BiHashMap<usize, Variable>,
+    all_recipes: &[Recipe],
+    clarabel_solution: &ClarabelSolution,
+) -> Vec<CalculatorSolution> {
+    let mut solutions = Vec::new();
+    for (i, recipe) in all_recipes.iter().enumerate() {
+        let num = clarabel_solution.value(*recipes_frequency.get_by_left(&i).unwrap());
         if num > f64::from(f32::EPSILON) {
-            print_recipe(num, recipe, &raw_items.data_array);
+            let solution = CalculatorSolution {
+                recipe: recipe.clone(),
+                num,
+            };
+            solutions.push(solution);
         }
-    });
-
-    Ok(())
+    }
+    solutions
 }
 
 fn config_solver(problem: &mut ClarabelProblem) {
@@ -262,45 +234,4 @@ fn config_solver(problem: &mut ClarabelProblem) {
         .static_regularization_constant(f64::EPSILON)
         .dynamic_regularization_eps(f64::EPSILON)
         .max_iter(u32::MAX);
-}
-
-fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
-    recipe
-        .items
-        .iter()
-        .for_each(|resource| match resource.resource_type {
-            ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}_{}, ",
-                num * resource.num / recipe.time,
-                item_name(cargo.item_id, items),
-                cargo.level
-            ),
-            ResourceType::Indirect(_indirect_resource) => todo!(),
-        });
-
-    print!("-> ");
-
-    recipe
-        .results
-        .iter()
-        .for_each(|resource| match resource.resource_type {
-            ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}_{}, ",
-                num * resource.num / recipe.time,
-                item_name(cargo.item_id, items),
-                cargo.level
-            ),
-            ResourceType::Indirect(_indirect_resource) => todo!(),
-        });
-
-    println!();
-}
-
-fn item_name(item_id: i16, items: &[ItemData]) -> String {
-    items
-        .iter()
-        .find(|item| item.id == item_id)
-        .unwrap()
-        .name
-        .clone()
 }
