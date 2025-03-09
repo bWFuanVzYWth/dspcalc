@@ -26,20 +26,6 @@ fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
         .sum()
 }
 
-fn recipe_term(
-    (i, recipe): (usize, &Recipe),
-    production: &ResourceType,
-    recipe_vars: &BiMap<usize, Variable>,
-    resource_accessor: fn(&Recipe) -> &[Resource],
-) -> Expression {
-    let items = resource_accessor(recipe);
-    items
-        .iter()
-        .filter(|res| res.resource_type == *production)
-        .map(|_| *recipe_vars.get_by_left(&i).unwrap() * stack(items, production) / recipe.time)
-        .sum::<Expression>()
-}
-
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
@@ -50,13 +36,33 @@ fn constraint_recipe(
         let production_expr: Expression = recipes
             .iter()
             .enumerate()
-            .map(|item| recipe_term(item, production, recipe_vars, |r| &r.results))
+            .map(|(i, recipe)| {
+                recipe
+                    .results
+                    .iter()
+                    .filter(|res| res.resource_type == *production)
+                    .map(|_| {
+                        let var = *recipe_vars.get_by_left(&i).unwrap();
+                        var * stack(&recipe.results, production) / recipe.time
+                    })
+                    .sum::<Expression>()
+            })
             .sum();
 
         let resource_expr: Expression = recipes
             .iter()
             .enumerate()
-            .map(|item| recipe_term(item, production, recipe_vars, |r| &r.items))
+            .map(|(i, recipe)| {
+                recipe
+                    .items
+                    .iter()
+                    .filter(|res| res.resource_type == *production)
+                    .map(|_| {
+                        let var = *recipe_vars.get_by_left(&i).unwrap();
+                        var * stack(&recipe.items, production) / recipe.time
+                    })
+                    .sum::<Expression>()
+            })
             .sum();
 
         problem.add_constraint(production_expr.geq(resource_expr));
@@ -64,8 +70,6 @@ fn constraint_recipe(
 }
 
 fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression {
-    // TODO 检查这个到底怎么写才正确
-    // 最小化建筑总数量
     recipe_vars
         .iter()
         .map(|(_, variable)| *variable)
@@ -93,6 +97,7 @@ fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
 }
 
 const STACK: f64 = 4.0;
+const PROLIFERATOR_TIME: f64 = 2.0;
 
 fn proliferator_mk3(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
     (1..=4).for_each(|cargo_point| {
@@ -107,7 +112,7 @@ fn proliferator_mk3(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
                     ),
                 ],
                 results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
-                time: 2.0,
+                time: PROLIFERATOR_TIME,
             });
         });
     });
@@ -115,18 +120,18 @@ fn proliferator_mk3(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
 
 fn proliferator_mk2(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
     (1..=2).for_each(|cargo_point| {
-        (1..=4).for_each(|proliferator_point| {
+        (0..=4).for_each(|proliferator_point| {
             recipes.push(Recipe {
                 items: vec![
                     Resource::from_item_point(item_data.id, 0, STACK),
                     Resource::from_item_point(
                         增产剂::MK2 as i16,
                         proliferator_point,
-                        4.0 / (增产剂::life(&增产剂::MK2, proliferator_point) as f64),
+                        STACK / (增产剂::life(&增产剂::MK2, proliferator_point) as f64),
                     ),
                 ],
                 results: vec![Resource::from_item_point(item_data.id, cargo_point, STACK)],
-                time: 2.0,
+                time: PROLIFERATOR_TIME,
             });
         });
     });
@@ -134,18 +139,18 @@ fn proliferator_mk2(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
 
 fn proliferator_mk1(recipes: &mut Vec<Recipe>, item_data: &ItemData) {
     const CARGO_POINT: u64 = 1;
-    (1..=4).for_each(|proliferator_point| {
+    (0..=4).for_each(|proliferator_point| {
         recipes.push(Recipe {
             items: vec![
                 Resource::from_item_point(item_data.id, 0, STACK),
                 Resource::from_item_point(
                     增产剂::MK1 as i16,
                     proliferator_point,
-                    4.0 / (增产剂::life(&增产剂::MK1, proliferator_point) as f64),
+                    STACK / (增产剂::life(&增产剂::MK1, proliferator_point) as f64),
                 ),
             ],
             results: vec![Resource::from_item_point(item_data.id, CARGO_POINT, STACK)],
-            time: 2.0,
+            time: PROLIFERATOR_TIME,
         });
     });
 }
@@ -158,7 +163,6 @@ pub fn solve() {
 
     // TODO 原矿化、采矿公式
 
-    // FIXME 增产剂自己不能被展平
     // 展平所有基础公式
     let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
     // 所有的喷涂公式
@@ -221,7 +225,7 @@ pub fn solve() {
     let solution = problem.solve().unwrap(); // FIXME 异常处理
 
     all_recipes.iter().enumerate().for_each(|(i, recipe)| {
-        let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // TODO 此处虽然不太可能，还是还是需要提供报错
+        let num = solution.value(*recipes_frequency.get_by_left(&i).unwrap()); // FIXME 此处虽然不太可能，还是还是需要提供报错
         if num > need_frequency * f64::from(f32::EPSILON) {
             print_recipe(num, recipe, &raw_items.data_array);
         }

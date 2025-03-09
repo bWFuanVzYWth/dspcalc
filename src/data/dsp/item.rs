@@ -23,13 +23,6 @@ pub struct Resource {
 }
 
 impl Resource {
-    pub const fn from_item(item_id: i16, num: f64) -> Self {
-        Resource {
-            resource_type: ResourceType::Direct(Cargo { item_id, point: 0 }),
-            num,
-        }
-    }
-
     pub const fn from_item_point(item_id: i16, point: u64, num: f64) -> Self {
         Resource {
             resource_type: ResourceType::Direct(Cargo { item_id, point }),
