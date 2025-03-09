@@ -1,4 +1,4 @@
-use crate::{data::dsp::item::Cargo, solver::proliferator::增产剂};
+use crate::{data::dsp::item::Cargo, solver::proliferator::Proliferator};
 use dspdb::recipe::RecipeItem;
 
 use super::item::{Resource, ResourceType::Direct};
@@ -50,7 +50,7 @@ fn accelerate(recipe_item: &RecipeItem, level: usize) -> Recipe {
         recipe_item,
         level,
         |num| num,
-        |time| time / 增产剂::accelerate(level),
+        |time| time / Proliferator::accelerate(level),
     )
 }
 
@@ -58,7 +58,7 @@ fn productive(recipe_item: &RecipeItem, level: usize) -> Recipe {
     create_recipe(
         recipe_item,
         level,
-        |num| num * 增产剂::increase(level),
+        |num| num * Proliferator::increase(level),
         |time| time,
     )
 }

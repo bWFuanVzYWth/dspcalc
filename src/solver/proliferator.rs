@@ -1,5 +1,5 @@
 #[derive(Clone)]
-pub enum 增产剂 {
+pub enum Proliferator {
     MK1,
     MK2,
     MK3,
@@ -17,29 +17,29 @@ const ACC_TABLE: [f64; INC_LEVEL_MAX + 1] =
 const POWER_TABLE: [f64; INC_LEVEL_MAX + 1] =
     [1.0, 1.3, 1.7, 2.1, 2.5, 2.9, 3.3, 3.7, 4.1, 4.5, 4.9];
 
-impl 增产剂 {
+impl Proliferator {
     pub const fn item_id(t: &Self) -> i16 {
         match t {
-            增产剂::MK1 => 1141,
-            增产剂::MK2 => 1142,
-            增产剂::MK3 => 1143,
+            Proliferator::MK1 => 1141,
+            Proliferator::MK2 => 1142,
+            Proliferator::MK3 => 1143,
         }
     }
 
-    pub const fn inc_level(t: &Self) -> u64 {
+    pub const fn inc_level(t: &Self) -> usize {
         match t {
-            增产剂::MK1 => 1,
-            增产剂::MK2 => 2,
-            增产剂::MK3 => 4,
+            Proliferator::MK1 => 1,
+            Proliferator::MK2 => 2,
+            Proliferator::MK3 => 4,
         }
     }
 
     pub const fn life(t: &Self, level: usize) -> usize {
         (Self::increase(level)
             * match t {
-                增产剂::MK1 => 12.0,
-                增产剂::MK2 => 24.0,
-                增产剂::MK3 => 60.0,
+                Proliferator::MK1 => 12.0,
+                Proliferator::MK2 => 24.0,
+                Proliferator::MK3 => 60.0,
             }) as usize
     }
 

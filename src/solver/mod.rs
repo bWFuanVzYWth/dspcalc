@@ -16,7 +16,7 @@ use dspdb::{
     item::{items, ItemData},
     recipe::{self},
 };
-use proliferator::增产剂;
+use proliferator::Proliferator;
 
 fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
     items
@@ -90,9 +90,9 @@ fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
     items_data.iter().for_each(|item_data| {
-        generate_proliferator_recipe(&mut recipes, item_data, 增产剂::MK3, 1..=4);
-        generate_proliferator_recipe(&mut recipes, item_data, 增产剂::MK2, 1..=2);
-        generate_proliferator_recipe(&mut recipes, item_data, 增产剂::MK1, 1..=1);
+        generate_proliferator_recipe(&mut recipes, item_data, Proliferator::MK3);
+        generate_proliferator_recipe(&mut recipes, item_data, Proliferator::MK2);
+        generate_proliferator_recipe(&mut recipes, item_data, Proliferator::MK1);
     });
     recipes
 }
@@ -103,13 +103,13 @@ const PROLIFERATOR_TIME: f64 = 2.0;
 fn generate_proliferator_recipe(
     recipes: &mut Vec<Recipe>,
     item_data: &ItemData,
-    proliferator: 增产剂,
-    cargo_levels: std::ops::RangeInclusive<usize>,
+    proliferator: Proliferator,
+    // cargo_levels: std::ops::RangeInclusive<usize>,
 ) {
-    let proliferator_id = 增产剂::item_id(&proliferator);
-    for cargo_level in cargo_levels {
+    let proliferator_id = Proliferator::item_id(&proliferator);
+    for cargo_level in 1..=Proliferator::inc_level(&proliferator) {
         for proliferator_level in 0..=4 {
-            let life = 增产剂::life(&proliferator, proliferator_level) as f64;
+            let life = Proliferator::life(&proliferator, proliferator_level) as f64;
             recipes.push(Recipe {
                 items: vec![
                     Resource::from_item_level(item_data.id, 0, STACK),
