@@ -18,7 +18,7 @@ use crate::{
     error::DspCalError::{self, *},
 };
 
-fn stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
+fn get_stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
     items
         .iter()
         .filter(|r| r.resource_type == *resource_type)
@@ -33,7 +33,7 @@ fn constraint_need(
     problem: &mut ClarabelProblem,
     need: Resource,
 ) -> good_lp::constraint::ConstraintReference {
-    let items = recipes_frequency
+    let items_expr = recipes_frequency
         .iter()
         .map(|(recipes_index, variable)| {
             all_recipes[*recipes_index]
@@ -45,7 +45,7 @@ fn constraint_need(
         })
         .sum::<Expression>();
 
-    let results = recipes_frequency
+    let results_expr = recipes_frequency
         .iter()
         .map(|(recipes_index, variable)| {
             all_recipes[*recipes_index]
@@ -57,7 +57,7 @@ fn constraint_need(
         })
         .sum::<Expression>();
 
-    problem.add_constraint((results - items).geq(need.num))
+    problem.add_constraint((results_expr - items_expr).geq(need.num))
 }
 
 fn constraint_needs(
@@ -85,8 +85,24 @@ fn constraint_recipe(
     recipe_vars: &bimap::BiHashMap<usize, Variable>,
     production: &ResourceType,
 ) -> Result<(), DspCalError> {
-    // 处理生产表达式
-    let production_expr: Expression = recipes
+    let items_expr: Expression = recipes
+        .iter()
+        .enumerate()
+        .map(|(i, recipe)| {
+            let var = *recipe_vars.get_by_left(&i).ok_or(UnknownLpVarId(i))?;
+            let expr = recipe
+                .items
+                .iter()
+                .filter(|res| res.resource_type == *production)
+                .map(|_| var * get_stack(&recipe.items, production) / recipe.time)
+                .sum::<Expression>();
+            Ok(expr)
+        })
+        .collect::<Result<Vec<Expression>, _>>()?
+        .into_iter()
+        .sum();
+
+    let results_expr: Expression = recipes
         .iter()
         .enumerate()
         .map(|(i, recipe)| {
@@ -97,7 +113,7 @@ fn constraint_recipe(
                 .results
                 .iter()
                 .filter(|res| res.resource_type == *production)
-                .map(|_| variable * stack(&recipe.results, production) / recipe.time)
+                .map(|_| variable * get_stack(&recipe.results, production) / recipe.time)
                 .sum::<Expression>();
             // TODO 这个闭包里的异常处理感觉逻辑上有点绕，可以考虑优化一下
             // TODO 这里两个表达式的构建都有点重复，检查是否有必要抽象出共同的结构
@@ -107,25 +123,7 @@ fn constraint_recipe(
         .into_iter()
         .sum();
 
-    // 处理资源消耗表达式
-    let resource_expr: Expression = recipes
-        .iter()
-        .enumerate()
-        .map(|(i, recipe)| {
-            let var = *recipe_vars.get_by_left(&i).ok_or(UnknownLpVarId(i))?;
-            let expr = recipe
-                .items
-                .iter()
-                .filter(|res| res.resource_type == *production)
-                .map(|_| var * stack(&recipe.items, production) / recipe.time)
-                .sum::<Expression>();
-            Ok(expr)
-        })
-        .collect::<Result<Vec<Expression>, _>>()?
-        .into_iter()
-        .sum();
-
-    problem.add_constraint(production_expr.geq(resource_expr));
+    problem.add_constraint(results_expr.geq(items_expr));
 
     Ok(())
 }
@@ -149,16 +147,10 @@ fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression 
         .sum::<Expression>()
 }
 
-// TODO 把求解过程抽象出来，生成约束的过程也是，这样可以更方便的拓展到其它游戏/mod
-
-// TODO 设置生产设备
-// TODO 传入约束，返回求解过程和结果
-// FIXME 库无关的返回类型
 pub fn solve(
     all_recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
     needs: &[Resource],
-    mines: &[ResourceType],
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
     // 定义变量，每个变量代表一个公式的调用次数
     let mut recipes_frequency = bimap::BiMap::new();
@@ -177,6 +169,7 @@ pub fn solve(
     // 设置线性规划求解精度
     config_solver(&mut problem);
 
+    // 根据公式生成并设置相应的约束
     constraint_recipes(
         &mut problem,
         all_recipes,
@@ -184,9 +177,13 @@ pub fn solve(
         &recipes_frequency,
     )?;
 
+    // 根据需求列表生成并设置相应的约束
     let _constraint_need = constraint_needs(all_recipes, &recipes_frequency, &mut problem, needs);
 
+    // 求解
     let clarabel_solution = problem.solve().map_err(LpSolverError)?;
+
+    // 把求解器的内部格式转换成通用的格式
     let solution = from_clarabel_solution(&recipes_frequency, all_recipes, &clarabel_solution)?;
 
     Ok(solution)

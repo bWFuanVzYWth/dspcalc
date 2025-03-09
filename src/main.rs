@@ -6,7 +6,10 @@ use dspdb::{
 };
 use factory_calculator::{
     data::dsp::{
-        item::{Cargo, Resource, ResourceType},
+        item::{
+            Cargo, Resource,
+            ResourceType::{self, Direct},
+        },
         recipe::{flatten_recipes, Recipe},
     },
     solver::proliferator::Proliferator,
@@ -60,6 +63,10 @@ fn generate_proliferator_recipe(
     }
 }
 
+fn is_mine(item: &ItemData) -> bool {
+    item.mining_from != ""
+}
+
 fn main() {
     let need_white_cube = Resource {
         resource_type: ResourceType::Direct(Cargo {
@@ -80,7 +87,26 @@ fn main() {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
-    // TODO 原矿化、采矿公式
+    // TODO 设置生产设备
+
+    let mut mines = Vec::new();
+    for item in &raw_items.data_array {
+        if is_mine(item) {
+            let tmp = Recipe {
+                items: Vec::new(),
+                results: vec![Resource {
+                    resource_type: Direct(Cargo {
+                        item_id: item.id,
+                        level: 0,
+                    }),
+                    num: 200.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
+                }],
+                time: 1.0,
+            };
+            mines.push(tmp);
+        }
+    }
+    // dbg!(mines);
 
     // 展平所有基础公式
     let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
@@ -88,15 +114,14 @@ fn main() {
     let proliferator_recipes = proliferator_recipes(&raw_items.data_array);
 
     // 找出所有在公式中出现过的资源
-    let all_recipes = [flatten_basic_recipes, proliferator_recipes].concat();
+    let all_recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
     let all_productions = find_all_production(&all_recipes);
 
     let needs = vec![need_white_cube, need_proliferator_mk3];
-    let mines = Vec::new();
 
     // FIXME 消除这个unwarp
     let solutions =
-        factory_calculator::solver::solve(&all_recipes, &all_productions, &needs, &mines).unwrap();
+        factory_calculator::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe, &raw_items.data_array);
     }
@@ -138,7 +163,6 @@ fn item_name(item_id: i16, items: &[ItemData]) -> String {
     items
         .iter()
         .find(|item| item.id == item_id)
-        .unwrap()
-        .name
-        .clone()
+        .map(|item| item.name.clone())
+        .unwrap_or_else(|| format!("Unknown Item {}", item_id))
 }
