@@ -157,7 +157,6 @@ fn constraint_recipes(
 }
 
 fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
-    // TODO 读取生产设备，计算速度倍率，现在这个只能计算1x倍率的最小化建筑
     recipe_variables.iter().copied().sum::<Expression>()
 }
 
@@ -166,7 +165,7 @@ pub fn solve(
     all_productions: &[ResourceType],
     needs: &[Resource],
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
-    // 定义变量，每个变量代表一个公式的调用次数
+    // 声明变量，每个变量表示某个公式对应的建筑数量
     let mut model = variables!();
     let recipe_variables = all_recipes
         .iter()

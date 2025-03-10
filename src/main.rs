@@ -126,7 +126,7 @@ fn main() {
     let all_recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
     let all_productions = find_all_production(&all_recipes);
     for recipe in &all_recipes {
-        print_recipe(1.0, recipe, &raw_items.data_array);
+        print_recipe(60.0, recipe, &raw_items.data_array);
     }
 
     let needs = vec![need_white_cube];
@@ -159,7 +159,7 @@ fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
                 "{:.6} * {}_{}, ",
-                num_scale * resource.num * 60.0 / recipe.time,
+                num_scale * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.level
             ),
@@ -174,7 +174,7 @@ fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
                 "{:.6} * {}_{}, ",
-                num_scale * resource.num,
+                num_scale * resource.num / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.level
             ),
