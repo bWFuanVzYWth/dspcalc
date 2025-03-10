@@ -107,7 +107,7 @@ fn constraint_recipe(
     recipe_stats: &[RecipeStats],
     production: &ResourceType,
     resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
-) -> Result<(), DspCalError> {
+) {
     // 通过倒排索引获取当前资源相关的配方
     let binding = Vec::new();
     let relevant_recipes = resource_to_recipes.get(production).unwrap_or(&binding);
@@ -123,17 +123,16 @@ fn constraint_recipe(
         results_expr += variable * output;
     }
     problem.add_constraint(results_expr.geq(items_expr));
-    Ok(())
 }
 
 fn constraint_recipes(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
-    all_productions: &HashSet<ResourceType>,
+    all_productions: &[ResourceType],
     recipe_variables: &[Variable],
     recipe_stats: &[RecipeStats],
     resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
-) -> Result<(), DspCalError> {
+) {
     for production in all_productions {
         constraint_recipe(
             problem,
@@ -142,21 +141,18 @@ fn constraint_recipes(
             recipe_stats,
             production,
             resource_to_recipes,
-        )?;
+        );
     }
-    Ok(())
 }
 
 fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
     // TODO 读取生产设备，计算速度倍率，现在这个只能计算1x倍率的最小化建筑
-    recipe_variables
-        .iter().copied()
-        .sum::<Expression>()
+    recipe_variables.iter().copied().sum::<Expression>()
 }
 
 pub fn solve(
     all_recipes: &[Recipe],
-    all_productions: &HashSet<ResourceType>,
+    all_productions: &[ResourceType],
     needs: &[Resource],
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
     // 定义变量，每个变量代表一个公式的调用次数
@@ -197,7 +193,7 @@ pub fn solve(
         &recipe_variables,
         &recipe_stats,
         &resource_to_recipes,
-    )?;
+    );
 
     // 根据需求列表生成并设置相应的约束
     let _constraint_need = constraint_needs(all_recipes, &recipe_variables, &mut problem, needs);

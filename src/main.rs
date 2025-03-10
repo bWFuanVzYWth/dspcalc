@@ -15,14 +15,14 @@ use dspcalc::{
     solver::proliferator::Proliferator,
 };
 
-fn find_all_production(recipes: &[Recipe]) -> HashSet<ResourceType> {
+fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
     let mut items_type = HashSet::new();
     for recipe in recipes.iter() {
         for product in recipe.results.iter() {
             items_type.insert(product.resource_type);
         }
     }
-    items_type
+    items_type.into_iter().collect()
 }
 
 fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
