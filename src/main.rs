@@ -1,18 +1,18 @@
 use std::collections::HashSet;
 
-use dspdb::{
-    item::{items, ItemData},
-    recipe,
-};
 use dspcalc::{
     data::dsp::{
         item::{
             Cargo, Resource,
             ResourceType::{self, Direct},
         },
-        recipe::{flatten_recipes, Recipe},
+        recipe::{flatten_recipes, BuildingType, Recipe, RecipeFmtInfo},
     },
     solver::proliferator::Proliferator,
+};
+use dspdb::{
+    item::{items, ItemData},
+    recipe,
 };
 
 fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
@@ -58,6 +58,11 @@ fn generate_proliferator_recipe(
                 ],
                 results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
                 time: PROLIFERATOR_TIME,
+                info: RecipeFmtInfo {
+                    name: "喷涂".to_string(),
+                    building_type: BuildingType::喷涂机,
+                    ..RecipeFmtInfo::default()
+                },
             });
         }
     }
@@ -100,6 +105,11 @@ fn main() {
                     num: 200.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
                 }],
                 time: 1.0,
+                info: RecipeFmtInfo {
+                    name: "采矿".to_string(),
+                    building_type: BuildingType::矿机,
+                    ..RecipeFmtInfo::default()
+                },
             };
             mines.push(tmp);
         }
@@ -118,8 +128,7 @@ fn main() {
     let needs = vec![need_white_cube, need_proliferator_mk3];
 
     // FIXME 消除这个unwarp
-    let solutions =
-        dspcalc::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
+    let solutions = dspcalc::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe, &raw_items.data_array);
     }

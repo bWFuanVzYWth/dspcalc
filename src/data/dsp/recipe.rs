@@ -4,10 +4,55 @@ use dspdb::recipe::RecipeItem;
 use super::item::{Resource, ResourceType::Direct};
 
 #[derive(Clone, Debug)]
+pub struct RecipeFmtInfo {
+    pub name: String,                       // 公式的名字
+    pub proliferator: Option<Proliferator>, // 使用的增产剂
+    pub speed_up: bool,
+    pub building_type: BuildingType, // 生产于什么建筑
+}
+
+impl Default for RecipeFmtInfo {
+    fn default() -> Self {
+        Self {
+            name: "Unknown Building".to_string(),
+            proliferator: None,
+            speed_up: true,
+            building_type: BuildingType::Unknown,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum BuildingType {
+    熔炉 = 1,
+    化工 = 2,
+    精炼厂 = 3,
+    制造台 = 4,
+    对撞机 = 5,
+    科研站 = 15,
+    矿机,
+    喷涂机,
+    Unknown,
+}
+
+#[derive(Clone, Debug)]
 pub struct Recipe {
-    pub items: Vec<Resource>,
-    pub results: Vec<Resource>,
-    pub time: f64,
+    pub items: Vec<Resource>,   // 原料
+    pub results: Vec<Resource>, // 产物
+    pub time: f64,              // 公式耗时，单位帧
+    pub info: RecipeFmtInfo,    // 不参与计算的信息
+}
+
+fn get_recipe_building(recipe_item: &RecipeItem) -> BuildingType {
+    match recipe_item.type_ {
+        1 => BuildingType::熔炉,
+        2 => BuildingType::化工,
+        3 => BuildingType::精炼厂,
+        4 => BuildingType::制造台,
+        5 => BuildingType::对撞机,
+        15 => BuildingType::科研站,
+        _ => BuildingType::Unknown,
+    }
 }
 
 fn create_recipe(
@@ -42,6 +87,12 @@ fn create_recipe(
             })
             .collect(),
         time: modify_time(recipe_item.time_spend as f64),
+        info: RecipeFmtInfo {
+            // FIXME 现在的写法难以获取当前公式是如何派生出来的，不利于显示
+            name: recipe_item.name.clone(),
+            building_type: get_recipe_building(recipe_item),
+            ..RecipeFmtInfo::default()
+        },
     }
 }
 
@@ -110,6 +161,12 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
             .collect(),
 
         time: recipe_item.time_spend as f64,
+        info: RecipeFmtInfo {
+            // FIXME 现在的写法难以获取当前公式是如何派生出来的，不利于显示
+            name: recipe_item.name.clone(),
+            building_type: get_recipe_building(recipe_item),
+            ..RecipeFmtInfo::default()
+        },
     });
 }
 

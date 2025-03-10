@@ -1,6 +1,6 @@
 pub mod proliferator;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use good_lp::{
     clarabel,

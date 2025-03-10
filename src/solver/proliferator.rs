@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Proliferator {
     MK1,
     MK2,
