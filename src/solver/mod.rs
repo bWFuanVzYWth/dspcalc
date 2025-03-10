@@ -1,6 +1,6 @@
 pub mod proliferator;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use good_lp::{
     clarabel,
@@ -17,12 +17,32 @@ use crate::{
     error::DspCalError::{self, *},
 };
 
-fn get_stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
-    items
-        .iter()
-        .filter(|r| r.resource_type == *resource_type)
-        .map(|r| r.num)
-        .sum()
+#[derive(Debug, Clone)]
+struct RecipeStats {
+    inputs: HashMap<ResourceType, f64>,
+    outputs: HashMap<ResourceType, f64>,
+}
+
+impl RecipeStats {
+    fn new(recipe: &Recipe) -> Self {
+        let inputs = recipe.items.iter().fold(HashMap::new(), |mut acc, res| {
+            *acc.entry(res.resource_type).or_insert(0.0) += res.num;
+            acc
+        });
+        let outputs = recipe.results.iter().fold(HashMap::new(), |mut acc, res| {
+            *acc.entry(res.resource_type).or_insert(0.0) += res.num;
+            acc
+        });
+        Self { inputs, outputs }
+    }
+
+    fn get_input(&self, resource_type: &ResourceType) -> f64 {
+        *self.inputs.get(resource_type).unwrap_or(&0.0)
+    }
+
+    fn get_output(&self, resource_type: &ResourceType) -> f64 {
+        *self.outputs.get(resource_type).unwrap_or(&0.0)
+    }
 }
 
 /// 构建需求约束：对于每种净需求，总产出 - 总消耗 ≥ 净需求
@@ -84,6 +104,7 @@ fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
     recipe_variables: &[Variable],
+    recipe_stats: &[RecipeStats],
     production: &ResourceType,
 ) -> Result<(), DspCalError> {
     let items_expr: Expression = recipes
@@ -95,7 +116,7 @@ fn constraint_recipe(
                 .items
                 .iter()
                 .filter(|res| res.resource_type == *production)
-                .map(|_| var * get_stack(&recipe.items, production) / recipe.time)
+                .map(|_| var * recipe_stats[i].get_input(production) / recipe.time)
                 .sum::<Expression>();
             Ok(expr)
         })
@@ -114,7 +135,7 @@ fn constraint_recipe(
                 .results
                 .iter()
                 .filter(|res| res.resource_type == *production)
-                .map(|_| variable * get_stack(&recipe.results, production) / recipe.time)
+                .map(|_| variable * recipe_stats[i].get_output(production) / recipe.time)
                 .sum::<Expression>();
             // TODO 这个闭包里的异常处理感觉逻辑上有点绕，可以考虑优化一下
             // TODO 这里两个表达式的构建都有点重复，检查是否有必要抽象出共同的结构
@@ -134,9 +155,10 @@ fn constraint_recipes(
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
     recipe_variables: &[Variable],
+    recipe_stats: &[RecipeStats],
 ) -> Result<(), DspCalError> {
     for production in all_productions.iter() {
-        constraint_recipe(problem, recipes, recipe_variables, production)?;
+        constraint_recipe(problem, recipes, recipe_variables, recipe_stats, production)?;
     }
     Ok(())
 }
@@ -170,12 +192,16 @@ pub fn solve(
     // 设置线性规划求解精度
     config_solver(&mut problem);
 
+    // 预处理配方统计信息
+    let recipe_stats: Vec<_> = all_recipes.iter().map(RecipeStats::new).collect();
+
     // 根据公式生成并设置相应的约束
     constraint_recipes(
         &mut problem,
         all_recipes,
         all_productions,
         &recipe_variables,
+        &recipe_stats,
     )?;
 
     // 根据需求列表生成并设置相应的约束
