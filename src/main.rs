@@ -102,7 +102,7 @@ fn main() {
                         item_id: item.id,
                         level: 0,
                     }),
-                    num: 200.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
+                    num: 100000.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
                 }],
                 time: 1.0,
                 info: RecipeFmtInfo {
@@ -124,6 +124,9 @@ fn main() {
     // 找出所有在公式中出现过的资源
     let all_recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
     let all_productions = find_all_production(&all_recipes);
+    for recipe in &all_recipes {
+        print_recipe(1.0, recipe, &raw_items.data_array);
+    }
 
     let needs = vec![need_white_cube, need_proliferator_mk3];
 
@@ -135,6 +138,22 @@ fn main() {
 }
 
 fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
+
+
+    if recipe.info.level >= 1 {
+        print!(
+            "({}_{})    ",
+            if recipe.info.speed_up {
+                "加速"
+            } else {
+                "增产"
+            },
+            recipe.info.level
+        );
+    }
+
+    print!("{:.3?}s    ",recipe.time / 60.0);
+
     recipe
         .items
         .iter()
