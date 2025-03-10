@@ -46,14 +46,15 @@ fn generate_proliferator_recipe(
     const INC_LEVEL_MK3: usize = Proliferator::inc_level(&Proliferator::MK3);
     for cargo_level in 1..=Proliferator::inc_level(proliferator) {
         for proliferator_level in 0..=INC_LEVEL_MK3 {
-            let life = Proliferator::life(proliferator, proliferator_level) as f64;
             recipes.push(Recipe {
                 items: vec![
                     Resource::from_item_level(item_data.id, 0, STACK),
                     Resource::from_item_level(
                         Proliferator::item_id(proliferator),
                         proliferator_level,
-                        STACK / life,
+                        ((Proliferator::inc_level(proliferator) as f64) / (cargo_level as f64))
+                            * STACK
+                            / (Proliferator::life(proliferator, proliferator_level) as f64),
                     ),
                 ],
                 results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
@@ -128,7 +129,7 @@ fn main() {
         print_recipe(1.0, recipe, &raw_items.data_array);
     }
 
-    let needs = vec![need_white_cube, need_proliferator_mk3];
+    let needs = vec![need_white_cube];
 
     // FIXME 消除这个unwarp
     let solutions = dspcalc::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
@@ -137,9 +138,7 @@ fn main() {
     }
 }
 
-fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
-
-
+fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
     if recipe.info.level >= 1 {
         print!(
             "({}_{})    ",
@@ -152,7 +151,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         );
     }
 
-    print!("{:.3?}s    ",recipe.time / 60.0);
+    print!("{:.3?}s    ", recipe.time / 60.0);
 
     recipe
         .items
@@ -160,7 +159,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
                 "{:.6} * {}_{}, ",
-                num * resource.num / recipe.time,
+                num_scale * resource.num * 60.0 / recipe.time,
                 item_name(cargo.item_id, items),
                 cargo.level
             ),
@@ -175,7 +174,7 @@ fn print_recipe(num: f64, recipe: &Recipe, items: &[ItemData]) {
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
                 "{:.6} * {}_{}, ",
-                num * resource.num / recipe.time,
+                num_scale * resource.num,
                 item_name(cargo.item_id, items),
                 cargo.level
             ),

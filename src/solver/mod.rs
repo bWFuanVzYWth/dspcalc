@@ -25,14 +25,20 @@ struct RecipeStats {
 
 impl RecipeStats {
     fn new(recipe: &Recipe) -> Self {
-        let inputs = recipe.items.iter().fold(HashMap::new(), |mut acc, res| {
-            *acc.entry(res.resource_type).or_insert(0.0) += res.num;
-            acc
-        });
-        let outputs = recipe.results.iter().fold(HashMap::new(), |mut acc, res| {
-            *acc.entry(res.resource_type).or_insert(0.0) += res.num;
-            acc
-        });
+        let mut inputs = HashMap::new();
+        for item in &recipe.items {
+            inputs
+                .entry(item.resource_type)
+                .and_modify(|counter| *counter += item.num)
+                .or_insert(item.num);
+        }
+        let mut outputs = HashMap::new();
+        for result in &recipe.results {
+            outputs
+                .entry(result.resource_type)
+                .and_modify(|counter| *counter += result.num)
+                .or_insert(result.num);
+        }
         Self { inputs, outputs }
     }
 
@@ -45,7 +51,7 @@ impl RecipeStats {
     }
 }
 
-/// 构建需求约束：对于每种净需求，总产出 - 总消耗 ≥ 净需求
+/// 构建需求约束：对于每种净需求，总产出速率 - 总消耗速率 ≥ 净需求速率
 fn constraint_need(
     all_recipes: &[Recipe],
     recipe_variables: &[Variable],
@@ -61,6 +67,7 @@ fn constraint_need(
                 .iter()
                 .filter(|product| product.resource_type == need.resource_type)
                 .map(|product| (product.num / all_recipes[recipes_index].time) * (*variable))
+                // .map(|product| product.num * (*variable))
                 .sum::<Expression>()
         })
         .sum::<Expression>();
@@ -74,6 +81,7 @@ fn constraint_need(
                 .iter()
                 .filter(|product| product.resource_type == need.resource_type)
                 .map(|product| (product.num / all_recipes[recipes_index].time) * (*variable))
+                // .map(|product| product.num * (*variable))
                 .sum::<Expression>()
         })
         .sum::<Expression>();
@@ -99,7 +107,7 @@ fn constraint_needs(
     constraints
 }
 
-/// 构建生产约束：对于每种资源，总产出 ≥ 总消耗
+/// 构建生产约束：对于每种资源，总产出速率 ≥ 总消耗速率
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
@@ -119,6 +127,9 @@ fn constraint_recipe(
         // 计算当前配方对资源的贡献
         let input = recipe_stats[recipe_idx].get_input(production) / recipe.time;
         let output = recipe_stats[recipe_idx].get_output(production) / recipe.time;
+        // let input = recipe_stats[recipe_idx].get_input(production) ;
+        // let output = recipe_stats[recipe_idx].get_output(production) ;
+
         items_expr += variable * input;
         results_expr += variable * output;
     }
