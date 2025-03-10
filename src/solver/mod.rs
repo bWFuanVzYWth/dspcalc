@@ -106,47 +106,23 @@ fn constraint_recipe(
     recipe_variables: &[Variable],
     recipe_stats: &[RecipeStats],
     production: &ResourceType,
+    resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
 ) -> Result<(), DspCalError> {
-    let items_expr: Expression = recipes
-        .iter()
-        .enumerate()
-        .map(|(i, recipe)| {
-            let var = *recipe_variables.get(i).ok_or(UnknownLpVarId(i))?;
-            let expr = recipe
-                .items
-                .iter()
-                .filter(|res| res.resource_type == *production)
-                .map(|_| var * recipe_stats[i].get_input(production) / recipe.time)
-                .sum::<Expression>();
-            Ok(expr)
-        })
-        .collect::<Result<Vec<Expression>, _>>()?
-        .into_iter()
-        .sum();
-
-    let results_expr: Expression = recipes
-        .iter()
-        .enumerate()
-        .map(|(i, recipe)| {
-            // 获取变量，若失败则返回错误
-            let variable = *recipe_variables.get(i).ok_or(UnknownLpVarId(i))?;
-            // 计算当前recipe的贡献
-            let expr = recipe
-                .results
-                .iter()
-                .filter(|res| res.resource_type == *production)
-                .map(|_| variable * recipe_stats[i].get_output(production) / recipe.time)
-                .sum::<Expression>();
-            // TODO 这个闭包里的异常处理感觉逻辑上有点绕，可以考虑优化一下
-            // TODO 这里两个表达式的构建都有点重复，检查是否有必要抽象出共同的结构
-            Ok(expr)
-        })
-        .collect::<Result<Vec<Expression>, _>>()?
-        .into_iter()
-        .sum();
-
+    // 通过倒排索引获取当前资源相关的配方
+    let binding = Vec::new();
+    let relevant_recipes = resource_to_recipes.get(production).unwrap_or(&binding);
+    let mut items_expr: Expression = 0.0.into();
+    let mut results_expr: Expression = 0.0.into();
+    for &recipe_idx in relevant_recipes {
+        let recipe = &recipes[recipe_idx];
+        let variable = recipe_variables[recipe_idx];
+        // 计算当前配方对资源的贡献
+        let input = recipe_stats[recipe_idx].get_input(production) / recipe.time;
+        let output = recipe_stats[recipe_idx].get_output(production) / recipe.time;
+        items_expr += variable * input;
+        results_expr += variable * output;
+    }
     problem.add_constraint(results_expr.geq(items_expr));
-
     Ok(())
 }
 
@@ -156,9 +132,17 @@ fn constraint_recipes(
     all_productions: &HashSet<ResourceType>,
     recipe_variables: &[Variable],
     recipe_stats: &[RecipeStats],
+    resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
 ) -> Result<(), DspCalError> {
     for production in all_productions.iter() {
-        constraint_recipe(problem, recipes, recipe_variables, recipe_stats, production)?;
+        constraint_recipe(
+            problem,
+            recipes,
+            recipe_variables,
+            recipe_stats,
+            production,
+            resource_to_recipes,
+        )?;
     }
     Ok(())
 }
@@ -195,6 +179,17 @@ pub fn solve(
     // 预处理配方统计信息
     let recipe_stats: Vec<_> = all_recipes.iter().map(RecipeStats::new).collect();
 
+    // 预处理阶段构建索引
+    let mut resource_to_recipes: HashMap<ResourceType, Vec<usize>> = HashMap::new();
+    for (i, recipe) in all_recipes.iter().enumerate() {
+        for res in recipe.items.iter().chain(recipe.results.iter()) {
+            resource_to_recipes
+                .entry(res.resource_type)
+                .or_insert(vec![])
+                .push(i);
+        }
+    }
+
     // 根据公式生成并设置相应的约束
     constraint_recipes(
         &mut problem,
@@ -202,6 +197,7 @@ pub fn solve(
         all_productions,
         &recipe_variables,
         &recipe_stats,
+        &resource_to_recipes,
     )?;
 
     // 根据需求列表生成并设置相应的约束
