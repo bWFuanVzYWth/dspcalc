@@ -2,7 +2,6 @@ pub mod proliferator;
 
 use std::collections::HashSet;
 
-use bimap::{BiHashMap, BiMap};
 use good_lp::{
     clarabel,
     constraint::ConstraintReference,
@@ -29,30 +28,32 @@ fn get_stack(items: &[Resource], resource_type: &ResourceType) -> f64 {
 /// 构建需求约束：对于每种净需求，总产出 - 总消耗 ≥ 净需求
 fn constraint_need(
     all_recipes: &[Recipe],
-    recipes_frequency: &BiMap<usize, Variable>,
+    recipe_variables: &[Variable],
     problem: &mut ClarabelProblem,
     need: Resource,
 ) -> good_lp::constraint::ConstraintReference {
-    let items_expr = recipes_frequency
+    let items_expr = recipe_variables
         .iter()
+        .enumerate()
         .map(|(recipes_index, variable)| {
-            all_recipes[*recipes_index]
+            all_recipes[recipes_index]
                 .items
                 .iter()
                 .filter(|product| product.resource_type == need.resource_type)
-                .map(|product| (product.num / all_recipes[*recipes_index].time) * (*variable))
+                .map(|product| (product.num / all_recipes[recipes_index].time) * (*variable))
                 .sum::<Expression>()
         })
         .sum::<Expression>();
 
-    let results_expr = recipes_frequency
+    let results_expr = recipe_variables
         .iter()
+        .enumerate()
         .map(|(recipes_index, variable)| {
-            all_recipes[*recipes_index]
+            all_recipes[recipes_index]
                 .results
                 .iter()
                 .filter(|product| product.resource_type == need.resource_type)
-                .map(|product| (product.num / all_recipes[*recipes_index].time) * (*variable))
+                .map(|product| (product.num / all_recipes[recipes_index].time) * (*variable))
                 .sum::<Expression>()
         })
         .sum::<Expression>();
@@ -62,7 +63,7 @@ fn constraint_need(
 
 fn constraint_needs(
     all_recipes: &[Recipe],
-    recipes_frequency: &BiMap<usize, Variable>,
+    recipe_variables: &[Variable],
     problem: &mut ClarabelProblem,
     needs: &[Resource],
 ) -> Vec<ConstraintReference> {
@@ -70,7 +71,7 @@ fn constraint_needs(
     for need in needs {
         constraints.push(constraint_need(
             all_recipes,
-            recipes_frequency,
+            recipe_variables,
             problem,
             *need,
         ));
@@ -82,14 +83,14 @@ fn constraint_needs(
 fn constraint_recipe(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
-    recipe_vars: &bimap::BiHashMap<usize, Variable>,
+    recipe_variables: &[Variable],
     production: &ResourceType,
 ) -> Result<(), DspCalError> {
     let items_expr: Expression = recipes
         .iter()
         .enumerate()
         .map(|(i, recipe)| {
-            let var = *recipe_vars.get_by_left(&i).ok_or(UnknownLpVarId(i))?;
+            let var = *recipe_variables.get(i).ok_or(UnknownLpVarId(i))?;
             let expr = recipe
                 .items
                 .iter()
@@ -107,7 +108,7 @@ fn constraint_recipe(
         .enumerate()
         .map(|(i, recipe)| {
             // 获取变量，若失败则返回错误
-            let variable = *recipe_vars.get_by_left(&i).ok_or(UnknownLpVarId(i))?;
+            let variable = *recipe_variables.get(i).ok_or(UnknownLpVarId(i))?;
             // 计算当前recipe的贡献
             let expr = recipe
                 .results
@@ -132,19 +133,19 @@ fn constraint_recipes(
     problem: &mut ClarabelProblem,
     recipes: &[Recipe],
     all_productions: &HashSet<ResourceType>,
-    recipe_vars: &BiMap<usize, Variable>,
+    recipe_variables: &[Variable],
 ) -> Result<(), DspCalError> {
     for production in all_productions.iter() {
-        constraint_recipe(problem, recipes, recipe_vars, production)?;
+        constraint_recipe(problem, recipes, recipe_variables, production)?;
     }
     Ok(())
 }
 
-fn minimize_buildings_count(recipe_vars: &BiMap<usize, Variable>) -> Expression {
+fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
     // TODO 读取生产设备，计算速度倍率，现在这个只能计算1x倍率的最小化建筑
-    recipe_vars
+    recipe_variables
         .iter()
-        .map(|(_, variable)| *variable)
+        .map(|variable| *variable)
         .sum::<Expression>()
 }
 
@@ -154,15 +155,14 @@ pub fn solve(
     needs: &[Resource],
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
     // 定义变量，每个变量代表一个公式的调用次数
-    let mut recipes_frequency = bimap::BiMap::new();
     let mut model = variables!();
-    all_recipes.iter().enumerate().for_each(|(i, _)| {
-        let frequency = model.add(variable().min(0.0));
-        recipes_frequency.insert(i, frequency); // recipes_index -> recipes_frequency
-    });
+    let recipe_variables = all_recipes
+        .iter()
+        .map(|_| model.add(variable().min(0.0)))
+        .collect::<Vec<_>>();
 
     // TODO 多种待优化目标，如最小化加权原矿，最小化占地
-    let objective = minimize_buildings_count(&recipes_frequency);
+    let objective = minimize_buildings_count(&recipe_variables);
 
     // 这个方法就叫minimise，不是minimize，奇异搞笑
     let mut problem = model.minimise(objective).using(clarabel);
@@ -175,17 +175,17 @@ pub fn solve(
         &mut problem,
         all_recipes,
         all_productions,
-        &recipes_frequency,
+        &recipe_variables,
     )?;
 
     // 根据需求列表生成并设置相应的约束
-    let _constraint_need = constraint_needs(all_recipes, &recipes_frequency, &mut problem, needs);
+    let _constraint_need = constraint_needs(all_recipes, &recipe_variables, &mut problem, needs);
 
     // 求解
     let clarabel_solution = problem.solve().map_err(LpSolverError)?;
 
     // 把求解器的内部格式转换成通用的格式
-    let solution = from_clarabel_solution(&recipes_frequency, all_recipes, &clarabel_solution)?;
+    let solution = from_clarabel_solution(&recipe_variables, all_recipes, &clarabel_solution)?;
 
     Ok(solution)
 }
@@ -196,14 +196,13 @@ pub struct CalculatorSolution {
 }
 
 pub fn from_clarabel_solution(
-    recipes_frequency: &BiHashMap<usize, Variable>,
+    recipe_variables: &[Variable],
     all_recipes: &[Recipe],
     clarabel_solution: &ClarabelSolution,
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
     let mut solutions = Vec::new();
     for (i, recipe) in all_recipes.iter().enumerate() {
-        let num =
-            clarabel_solution.value(*recipes_frequency.get_by_left(&i).ok_or(UnknownLpVarId(i))?);
+        let num = clarabel_solution.value(*recipe_variables.get(i).ok_or(UnknownLpVarId(i))?);
         if num > f64::from(f32::EPSILON) {
             let solution = CalculatorSolution {
                 recipe: recipe.clone(),
