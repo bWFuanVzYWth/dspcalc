@@ -14,7 +14,7 @@ use crate::{
         item::{Resource, ResourceType},
         recipe::Recipe,
     },
-    error::DspCalError::{self, *},
+    error::DspCalError::{self, LpSolverError, UnknownLpVarId},
 };
 
 #[derive(Debug, Clone)]
@@ -134,7 +134,7 @@ fn constraint_recipes(
     recipe_stats: &[RecipeStats],
     resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
 ) -> Result<(), DspCalError> {
-    for production in all_productions.iter() {
+    for production in all_productions {
         constraint_recipe(
             problem,
             recipes,
@@ -150,8 +150,7 @@ fn constraint_recipes(
 fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
     // TODO 读取生产设备，计算速度倍率，现在这个只能计算1x倍率的最小化建筑
     recipe_variables
-        .iter()
-        .map(|variable| *variable)
+        .iter().copied()
         .sum::<Expression>()
 }
 
@@ -185,7 +184,7 @@ pub fn solve(
         for res in recipe.items.iter().chain(recipe.results.iter()) {
             resource_to_recipes
                 .entry(res.resource_type)
-                .or_insert(vec![])
+                .or_default()
                 .push(i);
         }
     }

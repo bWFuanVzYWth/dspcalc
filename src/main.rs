@@ -64,7 +64,7 @@ fn generate_proliferator_recipe(
 }
 
 fn is_mine(item: &ItemData) -> bool {
-    item.mining_from != ""
+    !item.mining_from.is_empty()
 }
 
 fn main() {
