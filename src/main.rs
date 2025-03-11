@@ -15,6 +15,7 @@ use dspdb::{
     recipe,
 };
 
+// TODO 检查这个hashSet能否去掉
 fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
     let mut items_type = HashSet::new();
     for recipe in recipes.iter() {
@@ -129,9 +130,9 @@ fn main() {
     // 找出所有在公式中出现过的资源
     let all_recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
     let all_productions = find_all_production(&all_recipes);
-    for recipe in &all_recipes {
-        print_recipe(60.0, recipe, &raw_items.data_array);
-    }
+    // for recipe in &all_recipes {
+    //     print_recipe(60.0, recipe, &raw_items.data_array);
+    // }
 
     let needs = vec![need_white_cube];
     // let needs = vec![need_proliferator_mk3];

@@ -1,7 +1,5 @@
 pub mod proliferator;
 
-use std::collections::HashMap;
-
 use good_lp::{
     clarabel,
     constraint::ConstraintReference,
@@ -17,15 +15,16 @@ use crate::{
     error::DspCalError::{self, LpSolverError, UnknownLpVarId},
 };
 
+// FIXME 生成这个约束花了大概40%的时间，可以利用配方矩阵的稀疏性大幅度优化
 /// 构建约束：对于每种产物，总产出速率 - 总消耗速率 ≥ 额外净需求速率
-fn creat_constraint(
+fn create_constraint(
     all_recipes: &[Recipe],
     recipe_variables: &[Variable],
     problem: &mut ClarabelProblem,
     need: Resource,
 ) -> good_lp::constraint::ConstraintReference {
     let items_expr = recipe_variables
-        .iter()
+        .iter() // 这里，大量的迭代都是完全无关的。
         .enumerate()
         .map(|(recipes_index, variable)| {
             all_recipes[recipes_index]
@@ -63,7 +62,7 @@ fn constraint_needs(
 ) -> Vec<ConstraintReference> {
     let mut constraints = Vec::new();
     for need in needs {
-        constraints.push(creat_constraint(
+        constraints.push(create_constraint(
             all_recipes,
             recipe_variables,
             problem,
@@ -85,7 +84,7 @@ fn constraint_recipes(
             resource_type: *production,
             num: 0.0,
         };
-        constraints.push(creat_constraint(
+        constraints.push(create_constraint(
             all_recipes,
             recipe_variables,
             problem,
@@ -119,17 +118,6 @@ pub fn solve(
 
     // 设置线性规划求解精度
     config_solver(&mut problem);
-
-    // 预处理阶段构建索引
-    let mut resource_to_recipes: HashMap<ResourceType, Vec<usize>> = HashMap::new();
-    for (i, recipe) in all_recipes.iter().enumerate() {
-        for res in recipe.items.iter().chain(recipe.results.iter()) {
-            resource_to_recipes
-                .entry(res.resource_type)
-                .or_default()
-                .push(i);
-        }
-    }
 
     // 根据公式生成并设置相应的约束
     constraint_recipes(
@@ -186,7 +174,5 @@ fn config_solver(problem: &mut ClarabelProblem) {
         .tol_infeas_rel(f64::EPSILON)
         .static_regularization_constant(f64::EPSILON)
         .dynamic_regularization_eps(f64::EPSILON)
-        // .equilibrate_max_iter(1000)
-        // .iterative_refinement_max_iter(1000)
         .max_iter(u32::MAX);
 }

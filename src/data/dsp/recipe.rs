@@ -43,7 +43,7 @@ pub struct Recipe {
     pub info: RecipeFmtInfo,    // 不参与计算的信息
 }
 
-fn get_recipe_building(recipe_item: &RecipeItem) -> BuildingType {
+const fn get_recipe_building(recipe_item: &RecipeItem) -> BuildingType {
     match recipe_item.type_ {
         1 => BuildingType::熔炉,
         2 => BuildingType::化工,

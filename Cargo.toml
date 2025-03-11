@@ -21,6 +21,7 @@ dspdb = { git = "https://github.com/bWFuanVzYWth/dspdb", branch = "master" }
 thiserror = "2.0.12"
 
 [profile.release]
+debug = true
 codegen-units = 1
 lto = "fat"
 rustflags = [
