@@ -77,7 +77,7 @@ fn main() {
     let need_white_cube = Resource {
         resource_type: ResourceType::Direct(Cargo {
             item_id: 6006,
-            level: 4,
+            level: 0,
         }),
         num: 10000.0,
     };
@@ -85,7 +85,7 @@ fn main() {
     let need_proliferator_mk3 = Resource {
         resource_type: ResourceType::Direct(Cargo {
             item_id: 1143,
-            level: 4,
+            level: 0,
         }),
         num: 10000.0,
     };
@@ -93,10 +93,9 @@ fn main() {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
+    // FIXME 光子不是原矿
     // TODO 接入禁用公式列表（直接移除对应的约束）
     // TODO 增加真正的原矿化（直接移除相关的公式）
-    // TODO 输出每个公式的值
-    // TODO 计算后输出优化结果（目标函数的值）
 
     let mut mines = Vec::new();
     for item in &raw_items.data_array {
@@ -134,7 +133,8 @@ fn main() {
         print_recipe(60.0, recipe, &raw_items.data_array);
     }
 
-    let needs = vec![need_proliferator_mk3];
+    let needs = vec![need_white_cube];
+    // let needs = vec![need_proliferator_mk3];
 
     // FIXME 消除这个unwarp
     let solutions = dspcalc::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
