@@ -93,6 +93,11 @@ fn main() {
     let raw_recipes = recipe::recipes();
     let raw_items = items();
 
+    // TODO 接入禁用公式列表（直接移除对应的约束）
+    // TODO 增加真正的原矿化（直接移除相关的公式）
+    // TODO 输出每个公式的值
+    // TODO 计算后输出优化结果（目标函数的值）
+
     let mut mines = Vec::new();
     for item in &raw_items.data_array {
         if is_mine(item) {
@@ -103,7 +108,7 @@ fn main() {
                         item_id: item.id,
                         level: 0,
                     }),
-                    num: 100000.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
+                    num: 4.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
                 }],
                 time: 1.0,
                 info: RecipeFmtInfo {
@@ -129,19 +134,21 @@ fn main() {
         print_recipe(60.0, recipe, &raw_items.data_array);
     }
 
-    let needs = vec![need_white_cube];
+    let needs = vec![need_proliferator_mk3];
 
     // FIXME 消除这个unwarp
     let solutions = dspcalc::solver::solve(&all_recipes, &all_productions, &needs).unwrap();
+    let price = solutions.iter().map(|a| a.num).sum::<f64>();
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe, &raw_items.data_array);
     }
+    print!("总成本：{}", price / 3600.0);
 }
 
 fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
     if recipe.info.level >= 1 {
         print!(
-            "({}_{})    ",
+            "({}_{})\t",
             if recipe.info.speed_up {
                 "加速"
             } else {
@@ -149,9 +156,13 @@ fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
             },
             recipe.info.level
         );
+    } else {
+        print!("(不增产)\t");
     }
 
-    print!("{:.3?}s    ", recipe.time / 60.0);
+    print!("{:.3?}\t", num_scale / 3600.0);
+
+    print!("{:.3?}s\t", recipe.time / 60.0);
 
     recipe
         .items

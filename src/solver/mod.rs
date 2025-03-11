@@ -17,42 +17,8 @@ use crate::{
     error::DspCalError::{self, LpSolverError, UnknownLpVarId},
 };
 
-#[derive(Debug, Clone)]
-struct RecipeStats {
-    inputs: HashMap<ResourceType, f64>,
-    outputs: HashMap<ResourceType, f64>,
-}
-
-impl RecipeStats {
-    fn new(recipe: &Recipe) -> Self {
-        let mut inputs = HashMap::new();
-        for item in &recipe.items {
-            inputs
-                .entry(item.resource_type)
-                .and_modify(|counter| *counter += item.num)
-                .or_insert(item.num);
-        }
-        let mut outputs = HashMap::new();
-        for result in &recipe.results {
-            outputs
-                .entry(result.resource_type)
-                .and_modify(|counter| *counter += result.num)
-                .or_insert(result.num);
-        }
-        Self { inputs, outputs }
-    }
-
-    fn get_input(&self, resource_type: &ResourceType) -> f64 {
-        *self.inputs.get(resource_type).unwrap_or(&0.0)
-    }
-
-    fn get_output(&self, resource_type: &ResourceType) -> f64 {
-        *self.outputs.get(resource_type).unwrap_or(&0.0)
-    }
-}
-
-/// 构建需求约束：对于每种净需求，总产出速率 - 总消耗速率 ≥ 净需求速率
-fn constraint_need(
+/// 构建约束：对于每种产物，总产出速率 - 总消耗速率 ≥ 额外净需求速率
+fn creat_constraint(
     all_recipes: &[Recipe],
     recipe_variables: &[Variable],
     problem: &mut ClarabelProblem,
@@ -97,7 +63,7 @@ fn constraint_needs(
 ) -> Vec<ConstraintReference> {
     let mut constraints = Vec::new();
     for need in needs {
-        constraints.push(constraint_need(
+        constraints.push(creat_constraint(
             all_recipes,
             recipe_variables,
             problem,
@@ -107,53 +73,26 @@ fn constraint_needs(
     constraints
 }
 
-/// 构建生产约束：对于每种资源，总产出速率 ≥ 总消耗速率
-fn constraint_recipe(
-    problem: &mut ClarabelProblem,
-    recipes: &[Recipe],
-    recipe_variables: &[Variable],
-    recipe_stats: &[RecipeStats],
-    production: &ResourceType,
-    resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
-) {
-    // 通过倒排索引获取当前资源相关的配方
-    let binding = Vec::new();
-    let relevant_recipes = resource_to_recipes.get(production).unwrap_or(&binding);
-    let mut items_expr: Expression = 0.0.into();
-    let mut results_expr: Expression = 0.0.into();
-    for &recipe_idx in relevant_recipes {
-        let recipe = &recipes[recipe_idx];
-        let variable = recipe_variables[recipe_idx];
-        // 计算当前配方对资源的贡献
-        let input = recipe_stats[recipe_idx].get_input(production) / recipe.time;
-        let output = recipe_stats[recipe_idx].get_output(production) / recipe.time;
-        // let input = recipe_stats[recipe_idx].get_input(production) ;
-        // let output = recipe_stats[recipe_idx].get_output(production) ;
-
-        items_expr += variable * input;
-        results_expr += variable * output;
-    }
-    problem.add_constraint(results_expr.geq(items_expr));
-}
-
 fn constraint_recipes(
-    problem: &mut ClarabelProblem,
-    recipes: &[Recipe],
-    all_productions: &[ResourceType],
+    all_recipes: &[Recipe],
     recipe_variables: &[Variable],
-    recipe_stats: &[RecipeStats],
-    resource_to_recipes: &HashMap<ResourceType, Vec<usize>>,
-) {
+    problem: &mut ClarabelProblem,
+    all_productions: &[ResourceType],
+) -> Vec<ConstraintReference> {
+    let mut constraints = Vec::new();
     for production in all_productions {
-        constraint_recipe(
-            problem,
-            recipes,
+        let resource = Resource {
+            resource_type: *production,
+            num: 0.0,
+        };
+        constraints.push(creat_constraint(
+            all_recipes,
             recipe_variables,
-            recipe_stats,
-            production,
-            resource_to_recipes,
-        );
+            problem,
+            resource,
+        ));
     }
+    constraints
 }
 
 fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
@@ -181,9 +120,6 @@ pub fn solve(
     // 设置线性规划求解精度
     config_solver(&mut problem);
 
-    // 预处理配方统计信息
-    let recipe_stats: Vec<_> = all_recipes.iter().map(RecipeStats::new).collect();
-
     // 预处理阶段构建索引
     let mut resource_to_recipes: HashMap<ResourceType, Vec<usize>> = HashMap::new();
     for (i, recipe) in all_recipes.iter().enumerate() {
@@ -197,12 +133,10 @@ pub fn solve(
 
     // 根据公式生成并设置相应的约束
     constraint_recipes(
-        &mut problem,
         all_recipes,
-        all_productions,
         &recipe_variables,
-        &recipe_stats,
-        &resource_to_recipes,
+        &mut problem,
+        all_productions,
     );
 
     // 根据需求列表生成并设置相应的约束
@@ -252,5 +186,7 @@ fn config_solver(problem: &mut ClarabelProblem) {
         .tol_infeas_rel(f64::EPSILON)
         .static_regularization_constant(f64::EPSILON)
         .dynamic_regularization_eps(f64::EPSILON)
+        // .equilibrate_max_iter(1000)
+        // .iterative_refinement_max_iter(1000)
         .max_iter(u32::MAX);
 }
