@@ -1,7 +1,12 @@
-use crate::{data::dsp::item::Cargo, solver::proliferator::Proliferator};
-use dspdb::recipe::RecipeItem;
+use crate::dsp::building::get_recipe_building;
+use crate::dsp::item::{item_name, Cargo, ResourceType};
+use dspdb::{item::ItemData, recipe::RecipeItem};
 
-use super::item::{Resource, ResourceType::Direct};
+use super::{
+    building::{time_scale, BuildingType},
+    item::{Resource, ResourceType::Direct},
+    proliferator::Proliferator,
+};
 
 #[derive(Clone, Debug)]
 pub struct RecipeFmtInfo {
@@ -23,50 +28,11 @@ impl Default for RecipeFmtInfo {
 }
 
 #[derive(Clone, Debug)]
-pub enum BuildingType {
-    熔炉 = 1,
-    化工 = 2,
-    精炼厂 = 3,
-    制造台 = 4,
-    对撞机 = 5,
-    科研站 = 15,
-    矿机,
-    喷涂机,
-    Unknown,
-}
-
-#[derive(Clone, Debug)]
 pub struct Recipe {
     pub items: Vec<Resource>,   // 原料
     pub results: Vec<Resource>, // 产物
     pub time: f64,              // 公式耗时，单位帧
     pub info: RecipeFmtInfo,    // 不参与计算的信息
-}
-
-const fn get_recipe_building(recipe_item: &RecipeItem) -> BuildingType {
-    match recipe_item.type_ {
-        1 => BuildingType::熔炉,
-        2 => BuildingType::化工,
-        3 => BuildingType::精炼厂,
-        4 => BuildingType::制造台,
-        5 => BuildingType::对撞机,
-        15 => BuildingType::科研站,
-        _ => BuildingType::Unknown,
-    }
-}
-
-fn time_scale(building_type: &BuildingType) -> f64 {
-    1.0 / match building_type {
-        BuildingType::熔炉 => 3.0,
-        BuildingType::化工 => 2.0,
-        BuildingType::精炼厂 => 1.0,
-        BuildingType::制造台 => 3.0,
-        BuildingType::对撞机 => 1.0,
-        BuildingType::科研站 => 3.0,
-        BuildingType::矿机 => 1.0,
-        BuildingType::喷涂机 => 1.0,
-        BuildingType::Unknown => 1.0,
-    }
 }
 
 fn create_recipe(
@@ -164,6 +130,7 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
     };
     recipes.push(create_recipe(recipe_item, 0, |num| num, |time| time, info));
 }
+
 // TODO 耗电量
 
 #[must_use]
@@ -175,4 +142,97 @@ pub fn flatten_recipes(basic_recipes: &[RecipeItem]) -> Vec<Recipe> {
         recipes_accelerate(&mut recipes, recipe_item);
     }
     recipes
+}
+
+pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
+    if recipe.info.level >= 1 {
+        print!(
+            "({}_{})\t",
+            if recipe.info.speed_up {
+                "加速"
+            } else {
+                "增产"
+            },
+            recipe.info.level
+        );
+    } else {
+        print!("(不增产)\t");
+    }
+
+    // FIXME magic number
+    print!("{:.3?}\t", num_scale / 3600.0);
+    print!("{:.3?}s\t", recipe.time / 60.0);
+
+    recipe
+        .items
+        .iter()
+        .for_each(|resource| match resource.resource_type {
+            ResourceType::Direct(cargo) => print!(
+                "{:.6} * {}_{}, ",
+                num_scale * resource.num / recipe.time,
+                item_name(cargo.item_id, items),
+                cargo.level
+            ),
+            ResourceType::Indirect(_indirect_resource) => todo!(),
+        });
+
+    print!("-> ");
+
+    recipe
+        .results
+        .iter()
+        .for_each(|resource| match resource.resource_type {
+            ResourceType::Direct(cargo) => print!(
+                "{:.6} * {}_{}, ",
+                num_scale * resource.num / recipe.time,
+                item_name(cargo.item_id, items),
+                cargo.level
+            ),
+            ResourceType::Indirect(_indirect_resource) => todo!(),
+        });
+
+    println!();
+}
+
+pub fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
+    let mut recipes = Vec::new();
+    for item_data in items_data.iter() {
+        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK3);
+        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK2);
+        generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK1);
+    }
+    recipes
+}
+
+fn generate_proliferator_recipe(
+    recipes: &mut Vec<Recipe>,
+    item_data: &ItemData,
+    proliferator: &Proliferator,
+) {
+    const STACK: f64 = 4.0;
+    const PROLIFERATOR_TIME: f64 = 2.0;
+    const INC_LEVEL_MK3: usize = Proliferator::inc_level(&Proliferator::MK3);
+    for cargo_level in 1..=Proliferator::inc_level(proliferator) {
+        for proliferator_level in 0..=INC_LEVEL_MK3 {
+            recipes.push(Recipe {
+                items: vec![
+                    Resource::from_item_level(item_data.id, 0, STACK),
+                    Resource::from_item_level(
+                        Proliferator::item_id(proliferator),
+                        proliferator_level,
+                        ((Proliferator::inc_level(proliferator) as f64) / (cargo_level as f64))
+                            * STACK
+                            / (Proliferator::life(proliferator, proliferator_level) as f64),
+                    ),
+                ],
+                results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
+                time: PROLIFERATOR_TIME,
+                info: RecipeFmtInfo {
+                    name: "喷涂".to_string(),
+                    building_type: BuildingType::喷涂机,
+                    ..RecipeFmtInfo::default()
+                },
+            });
+        }
+    }
 }

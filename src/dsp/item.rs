@@ -1,3 +1,5 @@
+use dspdb::item::ItemData;
+
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IndirectResource {
     Power,
@@ -45,4 +47,13 @@ impl Resource {
             num,
         }
     }
+}
+
+
+pub fn item_name(item_id: i16, items: &[ItemData]) -> String {
+    items
+        .iter()
+        .find(|item| item.id == item_id)
+        .map(|item| item.name.clone())
+        .unwrap_or_else(|| format!("Unknown Item {}", item_id))
 }

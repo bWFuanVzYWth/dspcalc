@@ -1,108 +1,46 @@
-pub mod proliferator;
+mod config;
+mod constraint;
+mod objective;
+mod translator;
 
+use std::collections::HashSet;
+
+use config::config_solver;
+use constraint::{constraint_needs, constraint_recipes};
 use good_lp::{
     clarabel,
     constraint::ConstraintReference,
     solvers::clarabel::{ClarabelProblem, ClarabelSolution},
     variable, variables, Expression, Solution, SolverModel, Variable,
 };
+use objective::minimize_buildings_count;
+use translator::{from_clarabel_solution, CalculatorSolution};
 
 use crate::{
-    data::dsp::{
+    dsp::{
         item::{Resource, ResourceType},
         recipe::Recipe,
     },
     error::DspCalError::{self, LpSolverError, UnknownLpVarId},
 };
 
-// FIXME 生成这个约束花了大概40%的时间，可以利用配方矩阵的稀疏性大幅度优化
-/// 构建约束：对于每种产物，总产出速率 - 总消耗速率 ≥ 额外净需求速率
-fn create_constraint(
-    all_recipes: &[Recipe],
-    recipe_variables: &[Variable],
-    problem: &mut ClarabelProblem,
-    need: Resource,
-) -> good_lp::constraint::ConstraintReference {
-    let items_expr = recipe_variables
-        .iter() // 这里，大量的迭代都是完全无关的。
-        .enumerate()
-        .map(|(recipes_index, variable)| {
-            all_recipes[recipes_index]
-                .items
-                .iter()
-                .filter(|product| product.resource_type == need.resource_type)
-                .map(|product| (product.num / all_recipes[recipes_index].time) * (*variable))
-                // .map(|product| product.num * (*variable))
-                .sum::<Expression>()
-        })
-        .sum::<Expression>();
-
-    let results_expr = recipe_variables
-        .iter()
-        .enumerate()
-        .map(|(recipes_index, variable)| {
-            all_recipes[recipes_index]
-                .results
-                .iter()
-                .filter(|product| product.resource_type == need.resource_type)
-                .map(|product| (product.num / all_recipes[recipes_index].time) * (*variable))
-                // .map(|product| product.num * (*variable))
-                .sum::<Expression>()
-        })
-        .sum::<Expression>();
-
-    problem.add_constraint((results_expr - items_expr).geq(need.num))
-}
-
-fn constraint_needs(
-    all_recipes: &[Recipe],
-    recipe_variables: &[Variable],
-    problem: &mut ClarabelProblem,
-    needs: &[Resource],
-) -> Vec<ConstraintReference> {
-    let mut constraints = Vec::new();
-    for need in needs {
-        constraints.push(create_constraint(
-            all_recipes,
-            recipe_variables,
-            problem,
-            *need,
-        ));
+// TODO 检查这个hashSet能否去掉
+fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
+    let mut items_type = HashSet::new();
+    for recipe in recipes.iter() {
+        for product in recipe.results.iter() {
+            items_type.insert(product.resource_type);
+        }
     }
-    constraints
-}
-
-fn constraint_recipes(
-    all_recipes: &[Recipe],
-    recipe_variables: &[Variable],
-    problem: &mut ClarabelProblem,
-    all_productions: &[ResourceType],
-) -> Vec<ConstraintReference> {
-    let mut constraints = Vec::new();
-    for production in all_productions {
-        let resource = Resource {
-            resource_type: *production,
-            num: 0.0,
-        };
-        constraints.push(create_constraint(
-            all_recipes,
-            recipe_variables,
-            problem,
-            resource,
-        ));
-    }
-    constraints
-}
-
-fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
-    recipe_variables.iter().copied().sum::<Expression>()
+    items_type.into_iter().collect()
 }
 
 pub fn solve(
     all_recipes: &[Recipe],
-    all_productions: &[ResourceType],
     needs: &[Resource],
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
+    let all_productions = find_all_production(&all_recipes);
+
     // 声明变量，每个变量表示某个公式对应的建筑数量
     let mut model = variables!();
     let recipe_variables = all_recipes
@@ -124,7 +62,7 @@ pub fn solve(
         all_recipes,
         &recipe_variables,
         &mut problem,
-        all_productions,
+        &all_productions,
     );
 
     // 根据需求列表生成并设置相应的约束
@@ -137,42 +75,4 @@ pub fn solve(
     let solution = from_clarabel_solution(&recipe_variables, all_recipes, &clarabel_solution)?;
 
     Ok(solution)
-}
-
-pub struct CalculatorSolution {
-    pub recipe: Recipe,
-    pub num: f64,
-}
-
-pub fn from_clarabel_solution(
-    recipe_variables: &[Variable],
-    all_recipes: &[Recipe],
-    clarabel_solution: &ClarabelSolution,
-) -> Result<Vec<CalculatorSolution>, DspCalError> {
-    let mut solutions = Vec::new();
-    for (i, recipe) in all_recipes.iter().enumerate() {
-        let num = clarabel_solution.value(*recipe_variables.get(i).ok_or(UnknownLpVarId(i))?);
-        if num > f64::from(f32::EPSILON) {
-            let solution = CalculatorSolution {
-                recipe: recipe.clone(),
-                num,
-            };
-            solutions.push(solution);
-        }
-    }
-    Ok(solutions)
-}
-
-fn config_solver(problem: &mut ClarabelProblem) {
-    problem
-        .settings()
-        .verbose(true) // 启用详细输出
-        .tol_gap_abs(f64::EPSILON)
-        .tol_gap_rel(f64::EPSILON)
-        .tol_feas(f64::EPSILON)
-        .tol_infeas_abs(f64::EPSILON)
-        .tol_infeas_rel(f64::EPSILON)
-        .static_regularization_constant(f64::EPSILON)
-        .dynamic_regularization_eps(f64::EPSILON)
-        .max_iter(u32::MAX);
 }
