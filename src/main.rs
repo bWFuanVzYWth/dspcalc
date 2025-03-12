@@ -33,7 +33,6 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
         print!("(不增产)\t");
     }
 
-    // FIXME magic number
     print!("{:.3?}\t", in_min(num_scale));
     print!("{:.3?}s\t", in_sec(recipe.time));
 
@@ -88,7 +87,7 @@ fn main() {
     let need_white_cube = Resource {
         resource_type: ResourceType::Direct(Cargo {
             item_id: 6006,
-            level: 0,
+            level: 4,
         }),
         num: 10000.0,
     };
@@ -96,7 +95,7 @@ fn main() {
     let need_proliferator_mk3 = Resource {
         resource_type: ResourceType::Direct(Cargo {
             item_id: 1143,
-            level: 0,
+            level: 4,
         }),
         num: 10000.0,
     };

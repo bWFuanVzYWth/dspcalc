@@ -44,6 +44,7 @@ impl BuildingType {
         }
     }
 
+    #[must_use]
     pub const fn power(&self) -> f64 {
         match self {
             Self::熔炉 => 2880.0,

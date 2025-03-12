@@ -46,7 +46,6 @@ impl Recipe {
             }
         }
     }
-    // TODO 耗电量
 
     #[must_use]
     pub fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Self> {

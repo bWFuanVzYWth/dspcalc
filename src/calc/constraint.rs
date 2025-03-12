@@ -11,7 +11,6 @@ use crate::{
     error::DspCalError,
 };
 
-// FIXME unwarp
 // FIXME 生成这个约束花了大概40%的时间，可以利用配方矩阵的稀疏性大幅度优化
 /// 构建约束：对于每种产物，总产出速率 - 总消耗速率 ≥ 额外净需求速率
 fn create_constraint(
