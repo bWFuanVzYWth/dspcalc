@@ -1,12 +1,65 @@
-use dspcalc::dsp::{
-    item::{
-        Cargo, Resource,
-        ResourceType::{self},
+use dspcalc::{
+    calc::Problem,
+    dsp::{
+        item::{
+            item_name, Cargo, Resource,
+            ResourceType::{self},
+        },
+        mine::mines,
+        recipe::Recipe,
     },
-    mine::mines,
-    recipe::{flatten_recipes, print_recipe, proliferator_recipes},
 };
-use dspdb::{item::items, recipe};
+use dspdb::item::ItemData;
+
+pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
+    if recipe.info.level >= 1 {
+        print!(
+            "({}_{})\t",
+            if recipe.info.speed_up {
+                "加速"
+            } else {
+                "增产"
+            },
+            recipe.info.level
+        );
+    } else {
+        print!("(不增产)\t");
+    }
+
+    // FIXME magic number
+    print!("{:.3?}\t", num_scale / 3600.0);
+    print!("{:.3?}s\t", recipe.time / 60.0);
+
+    recipe
+        .items
+        .iter()
+        .for_each(|resource| match resource.resource_type {
+            ResourceType::Direct(cargo) => print!(
+                "{:.6} * {}_{}, ",
+                num_scale * resource.num / recipe.time,
+                item_name(cargo.item_id, items),
+                cargo.level
+            ),
+            ResourceType::Indirect(_indirect_resource) => todo!(),
+        });
+
+    print!("-> ");
+
+    recipe
+        .results
+        .iter()
+        .for_each(|resource| match resource.resource_type {
+            ResourceType::Direct(cargo) => print!(
+                "{:.6} * {}_{}, ",
+                num_scale * resource.num / recipe.time,
+                item_name(cargo.item_id, items),
+                cargo.level
+            ),
+            ResourceType::Indirect(_indirect_resource) => todo!(),
+        });
+
+    println!();
+}
 
 fn main() {
     let need_white_cube = Resource {
@@ -25,8 +78,8 @@ fn main() {
         num: 10000.0,
     };
 
-    let raw_recipes = recipe::recipes();
-    let raw_items = items();
+    let raw_recipes = dspdb::recipe::recipes();
+    let raw_items = dspdb::item::items();
 
     // FIXME 光子不是原矿
     // TODO 接入禁用公式列表（直接移除对应的约束）
@@ -37,21 +90,17 @@ fn main() {
     // dbg!(mines);
 
     // 展平所有基础公式
-    let flatten_basic_recipes = flatten_recipes(&raw_recipes.data_array);
+    let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes.data_array);
     // 所有的喷涂公式
-    let proliferator_recipes = proliferator_recipes(&raw_items.data_array);
+    let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
 
     // 找出所有在公式中出现过的资源
-    let all_recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
-    // for recipe in &all_recipes {
-    //     print_recipe(60.0, recipe, &raw_items.data_array);
-    // }
-
+    let recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
     let needs = vec![need_white_cube];
     // let needs = vec![need_proliferator_mk3];
 
-    // FIXME 消除这个unwarp
-    let solutions = dspcalc::solver::solve(&all_recipes, &needs).unwrap();
+    let problem = Problem { recipes, needs };
+    let solutions = problem.solve().unwrap(); // FIXME 消除这个unwarp
     let price = solutions.iter().map(|a| a.num).sum::<f64>();
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe, &raw_items.data_array);

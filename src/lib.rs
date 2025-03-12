@@ -15,4 +15,4 @@
 
 pub mod dsp;
 pub mod error;
-pub mod solver;
+pub mod calc;

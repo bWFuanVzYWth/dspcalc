@@ -49,6 +49,7 @@ impl Resource {
     }
 }
 
+// TODO 这个应该丢到dspdb里去
 #[must_use]
 pub fn item_name(item_id: i16, items: &[ItemData]) -> String {
     items.iter().find(|item| item.id == item_id).map_or_else(
