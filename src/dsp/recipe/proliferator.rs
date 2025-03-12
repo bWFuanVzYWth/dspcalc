@@ -17,21 +17,28 @@ impl Recipe {
         for cargo_level in 1..=Proliferator::inc_level(proliferator) {
             for proliferator_level in 0..=Proliferator::MAX_INC_LEVEL {
                 recipes.push(Self {
-                    items: vec![
-                        Resource::from_item_level(item_data.id, 0, STACK),
-                        Resource::from_item_level(
-                            Proliferator::item_id(proliferator),
-                            proliferator_level,
-                            (f64::from(Proliferator::inc_level(proliferator))
-                                / f64::from(cargo_level))
-                                * STACK
-                                / f64::from(Proliferator::life(proliferator, proliferator_level)),
-                        ),
-                    ],
+                    items: {
+                        let mut items = vec![
+                            Resource::from_item_level(item_data.id, 0, STACK),
+                            Resource::from_item_level(
+                                Proliferator::item_id(proliferator),
+                                proliferator_level,
+                                (f64::from(Proliferator::inc_level(proliferator))
+                                    / f64::from(cargo_level))
+                                    * STACK
+                                    / f64::from(Proliferator::life(
+                                        proliferator,
+                                        proliferator_level,
+                                    )),
+                            ),
+                        ];
+                        items.push(Resource::power(BuildingType::喷涂机.power()));
+                        items
+                    },
                     results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
                     time: PROLIFERATOR_TIME,
                     info: RecipeFmtInfo {
-                        name: "喷涂".to_string(),
+                        name: String::from("喷涂"),
                         building_type: BuildingType::喷涂机,
                         ..RecipeFmtInfo::default()
                     },

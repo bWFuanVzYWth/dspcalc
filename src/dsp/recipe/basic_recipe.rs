@@ -14,22 +14,27 @@ impl Recipe {
         level: u8,
         modify_result_num: impl Fn(f64) -> f64,
         modify_time: impl Fn(f64) -> f64,
-        // power_scale: f64,
+        power_scale: f64,
         info: RecipeFmtInfo,
     ) -> Self {
+        let power =
+            Resource::power(BuildingType::from_recipe_item(recipe_item).power() * power_scale);
+        let mut items: Vec<_> = recipe_item
+            .items
+            .iter()
+            .zip(recipe_item.item_counts.iter())
+            .map(|(item, count)| Resource {
+                resource_type: ResourceType::Direct(Cargo {
+                    item_id: *item,
+                    level,
+                }),
+                num: *count as f64,
+            })
+            .collect();
+        items.push(power);
+
         Self {
-            items: recipe_item
-                .items
-                .iter()
-                .zip(recipe_item.item_counts.iter())
-                .map(|(item, count)| Resource {
-                    resource_type: ResourceType::Direct(Cargo {
-                        item_id: *item,
-                        level,
-                    }),
-                    num: *count as f64,
-                })
-                .collect(),
+            items,
             results: recipe_item
                 .results
                 .iter()
@@ -60,6 +65,7 @@ impl Recipe {
             level,
             |num| num,
             |time| time / Proliferator::accelerate(level),
+            Proliferator::power(level),
             info,
         )
     }
@@ -76,6 +82,7 @@ impl Recipe {
             level,
             |num| num * Proliferator::increase(level),
             |time| time,
+            Proliferator::power(level),
             info,
         )
     }
@@ -106,6 +113,7 @@ impl Recipe {
             0,
             |num| num,
             |time| time,
+            Proliferator::power(0),
             info,
         ));
     }

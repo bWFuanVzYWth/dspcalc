@@ -1,5 +1,6 @@
 mod basic_recipe;
 mod mine;
+mod power;
 mod proliferator;
 
 use dspdb::recipe::RecipeItem;
@@ -17,7 +18,7 @@ pub struct RecipeFmtInfo {
 impl Default for RecipeFmtInfo {
     fn default() -> Self {
         Self {
-            name: "Unknown Building".to_string(),
+            name: String::from("Unknown Building"),
             level: 0,
             speed_up: true,
             building_type: BuildingType::Unknown,

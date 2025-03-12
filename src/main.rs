@@ -10,6 +10,14 @@ use dspcalc::{
 };
 use dspdb::item::ItemData;
 
+fn in_sec(tick: f64) -> f64 {
+    tick / 60.0
+}
+
+fn in_min(tick: f64) -> f64 {
+    tick / 3600.0
+}
+
 pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
     if recipe.info.level >= 1 {
         print!(
@@ -26,8 +34,8 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
     }
 
     // FIXME magic number
-    print!("{:.3?}\t", num_scale / 3600.0);
-    print!("{:.3?}s\t", recipe.time / 60.0);
+    print!("{:.3?}\t", in_min(num_scale));
+    print!("{:.3?}s\t", in_sec(recipe.time));
 
     recipe
         .items
@@ -39,7 +47,15 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
                 item_name(cargo.item_id, items),
                 cargo.level
             ),
-            ResourceType::Indirect(_indirect_resource) => todo!(),
+            ResourceType::Indirect(indirect_resource) => match indirect_resource {
+                dspcalc::dsp::item::IndirectResource::Power => {
+                    print!(
+                        "{:.6} MW",
+                        in_sec(num_scale * resource.num / recipe.time / 1000.0)
+                    );
+                }
+                dspcalc::dsp::item::IndirectResource::Area => todo!(),
+            },
         });
 
     print!("-> ");
@@ -54,7 +70,15 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
                 item_name(cargo.item_id, items),
                 cargo.level
             ),
-            ResourceType::Indirect(_indirect_resource) => todo!(),
+            ResourceType::Indirect(indirect_resource) => match indirect_resource {
+                dspcalc::dsp::item::IndirectResource::Power => {
+                    print!(
+                        "{:.6} MW",
+                        in_sec(num_scale * resource.num / recipe.time / 1000.0)
+                    );
+                }
+                dspcalc::dsp::item::IndirectResource::Area => todo!(),
+            },
         });
 
     println!();
@@ -80,16 +104,17 @@ fn main() {
     let raw_recipes = dspdb::recipe::recipes();
     let raw_items = dspdb::item::items();
 
-    // FIXME 光子不是原矿
+    // FIXME 重氢，光子，电池：不是原矿，但是有公式生产
     // TODO 接入禁用公式列表（直接移除对应的约束）
     // TODO 增加真正的原矿化（直接移除相关的公式）
     // TODO 物流卡顿：爪子进出建筑，大塔，传送带等
 
     // 生成所有的公式
+    let powers = Recipe::powers();
     let mines = Recipe::mines(&raw_items);
     let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes.data_array);
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
-    let recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
+    let recipes = [powers, flatten_basic_recipes, proliferator_recipes, mines].concat();
 
     // 声明所有需求
     let needs = vec![need_white_cube];

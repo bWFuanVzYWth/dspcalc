@@ -25,7 +25,7 @@ impl Recipe {
                     }],
                     time: 1.0,
                     info: RecipeFmtInfo {
-                        name: "采矿".to_string(),
+                        name: String::from("采矿"),
                         building_type: BuildingType::矿机,
                         ..RecipeFmtInfo::default()
                     },
