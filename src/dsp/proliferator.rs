@@ -39,13 +39,13 @@ impl Proliferator {
     }
 
     #[must_use]
-    pub const fn life(t: &Self, level: usize) -> usize {
+    pub const fn life(t: &Self, level: usize) -> u8 {
         (Self::increase(level)
             * match t {
                 Self::MK1 => 12.0,
                 Self::MK2 => 24.0,
                 Self::MK3 => 60.0,
-            }) as usize
+            }) as u8
     }
 
     #[must_use]
