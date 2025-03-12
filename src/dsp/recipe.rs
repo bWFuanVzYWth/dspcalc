@@ -191,12 +191,12 @@ impl Recipe {
     }
 
     #[must_use]
-    pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Recipe> {
+    pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Self> {
         let mut mines = Vec::new();
         for item in &raw_items.data_array {
             let is_mine = |item: &ItemData| !item.mining_from.is_empty();
             if is_mine(item) {
-                let tmp = Recipe {
+                let tmp = Self {
                     items: Vec::new(),
                     results: vec![Resource {
                         resource_type: Direct(Cargo {
