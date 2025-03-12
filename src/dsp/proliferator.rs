@@ -18,7 +18,7 @@ const POWER_TABLE: [f64; INC_LEVEL_MAX + 1] =
     [1.0, 1.3, 1.7, 2.1, 2.5, 2.9, 3.3, 3.7, 4.1, 4.5, 4.9];
 
 impl Proliferator {
-    pub const MAX_INC_LEVEL: usize = Proliferator::inc_level(&Proliferator::MK3);
+    pub const MAX_INC_LEVEL: usize = Self::inc_level(&Self::MK3);
 
     #[must_use]
     pub const fn item_id(t: &Self) -> i16 {

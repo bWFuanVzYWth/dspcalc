@@ -41,8 +41,8 @@ impl Recipe {
         modify_result_num: impl Fn(f64) -> f64,
         modify_time: impl Fn(f64) -> f64,
         info: RecipeFmtInfo,
-    ) -> Recipe {
-        Recipe {
+    ) -> Self {
+        Self {
             items: recipe_item
                 .items
                 .iter()
@@ -73,7 +73,7 @@ impl Recipe {
         }
     }
 
-    fn accelerate(recipe_item: &RecipeItem, level: usize) -> Recipe {
+    fn accelerate(recipe_item: &RecipeItem, level: usize) -> Self {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             level,
@@ -89,7 +89,7 @@ impl Recipe {
         )
     }
 
-    fn productive(recipe_item: &RecipeItem, level: usize) -> Recipe {
+    fn productive(recipe_item: &RecipeItem, level: usize) -> Self {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             level,
@@ -105,13 +105,13 @@ impl Recipe {
         )
     }
 
-    fn recipes_accelerate(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
+    fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         for level in 1..=Proliferator::MAX_INC_LEVEL {
             recipes.push(Self::accelerate(recipe_item, level));
         }
     }
 
-    fn recipes_productive(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
+    fn recipes_productive(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         if !recipe_item.non_productive {
             for level in 1..=Proliferator::MAX_INC_LEVEL {
                 recipes.push(Self::productive(recipe_item, level));
@@ -119,7 +119,7 @@ impl Recipe {
         }
     }
 
-    fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
+    fn recipe_vanilla(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             level: 0,
@@ -136,7 +136,7 @@ impl Recipe {
     }
 
     #[must_use]
-    pub fn flatten_recipes(basic_recipes: &[RecipeItem]) -> Vec<Recipe> {
+    pub fn flatten_recipes(basic_recipes: &[RecipeItem]) -> Vec<Self> {
         let mut recipes = Vec::new();
         for recipe_item in basic_recipes {
             Self::recipe_vanilla(&mut recipes, recipe_item);
@@ -147,7 +147,7 @@ impl Recipe {
     }
 
     fn generate_proliferator_recipe(
-        recipes: &mut Vec<Recipe>,
+        recipes: &mut Vec<Self>,
         item_data: &ItemData,
         proliferator: &Proliferator,
     ) {
@@ -155,7 +155,7 @@ impl Recipe {
         const PROLIFERATOR_TIME: f64 = 2.0;
         for cargo_level in 1..=Proliferator::inc_level(proliferator) {
             for proliferator_level in 0..=Proliferator::MAX_INC_LEVEL {
-                recipes.push(Recipe {
+                recipes.push(Self {
                     items: vec![
                         Resource::from_item_level(item_data.id, 0, STACK),
                         Resource::from_item_level(
@@ -180,7 +180,7 @@ impl Recipe {
     // TODO 耗电量
 
     #[must_use]
-    pub fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
+    pub fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Self> {
         let mut recipes = Vec::new();
         for item_data in items_data {
             Self::generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK3);
@@ -188,5 +188,33 @@ impl Recipe {
             Self::generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK1);
         }
         recipes
+    }
+
+    #[must_use]
+    pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Recipe> {
+        let mut mines = Vec::new();
+        for item in &raw_items.data_array {
+            let is_mine = |item: &ItemData| !item.mining_from.is_empty();
+            if is_mine(item) {
+                let tmp = Recipe {
+                    items: Vec::new(),
+                    results: vec![Resource {
+                        resource_type: Direct(Cargo {
+                            item_id: item.id,
+                            level: 0,
+                        }),
+                        num: 4.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
+                    }],
+                    time: 1.0,
+                    info: RecipeFmtInfo {
+                        name: "采矿".to_string(),
+                        building_type: BuildingType::矿机,
+                        ..RecipeFmtInfo::default()
+                    },
+                };
+                mines.push(tmp);
+            }
+        }
+        mines
     }
 }

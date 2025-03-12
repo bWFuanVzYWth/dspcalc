@@ -5,7 +5,6 @@ use dspcalc::{
             item_name, Cargo, Resource,
             ResourceType::{self},
         },
-        mine::mines,
         recipe::Recipe,
     },
 };
@@ -86,21 +85,21 @@ fn main() {
     // TODO 增加真正的原矿化（直接移除相关的公式）
     // TODO 物流卡顿：爪子进出建筑，大塔，传送带等
 
-    let mines = mines(&raw_items);
-    // dbg!(mines);
-
-    // 展平所有基础公式
+    // 生成所有的公式
+    let mines = Recipe::mines(&raw_items);
     let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes.data_array);
-    // 所有的喷涂公式
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
-
-    // 找出所有在公式中出现过的资源
     let recipes = [flatten_basic_recipes, proliferator_recipes, mines].concat();
+
+    // 声明所有需求
     let needs = vec![need_white_cube];
     // let needs = vec![need_proliferator_mk3];
 
+    // 创建问题并求解
     let problem = Problem { recipes, needs };
     let solutions = problem.solve().unwrap(); // FIXME 消除这个unwarp
+
+    // 输出
     let price = solutions.iter().map(|a| a.num).sum::<f64>();
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe, &raw_items.data_array);

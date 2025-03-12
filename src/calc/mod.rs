@@ -5,9 +5,10 @@ mod translator;
 
 use std::collections::HashSet;
 
+use good_lp::{clarabel, variable, variables, SolverModel};
+
 use config::config_solver;
 use constraint::{constraint_needs, constraint_recipes};
-use good_lp::{clarabel, variable, variables, SolverModel};
 use objective::minimize_buildings_count;
 use translator::from_clarabel_solution;
 

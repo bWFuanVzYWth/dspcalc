@@ -30,15 +30,15 @@ impl BuildingType {
     #[must_use]
     pub const fn time_scale(&self) -> f64 {
         match self {
-            BuildingType::熔炉 => 1.0 / 3.0,
-            BuildingType::化工 => 1.0 / 2.0,
-            BuildingType::精炼厂 => 1.0,
-            BuildingType::制造台 => 1.0 / 3.0,
-            BuildingType::对撞机 => 1.0,
-            BuildingType::科研站 => 1.0 / 3.0,
-            BuildingType::矿机 => 1.0,
-            BuildingType::喷涂机 => 1.0,
-            BuildingType::Unknown => 1.0,
+            Self::熔炉 => 1.0 / 3.0,
+            Self::化工 => 1.0 / 2.0,
+            Self::精炼厂 => 1.0,
+            Self::制造台 => 1.0 / 3.0,
+            Self::对撞机 => 1.0,
+            Self::科研站 => 1.0 / 3.0,
+            Self::矿机 => 1.0,
+            Self::喷涂机 => 1.0,
+            Self::Unknown => 1.0,
         }
     }
 }

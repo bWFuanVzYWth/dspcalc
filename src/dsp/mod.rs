@@ -1,6 +1,5 @@
 pub mod building;
 pub mod item;
-pub mod mine;
 pub mod proliferator;
 pub mod recipe;
 
