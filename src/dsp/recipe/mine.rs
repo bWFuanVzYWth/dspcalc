@@ -7,6 +7,8 @@ use crate::dsp::{
 
 use super::{Recipe, RecipeFmtInfo};
 
+// TODO 根据采矿等级设置num
+// FIXME 耗电量计算不正确
 impl Recipe {
     #[must_use]
     pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Self> {
@@ -15,13 +17,13 @@ impl Recipe {
             let is_mine = |item: &ItemData| !item.mining_from.is_empty();
             if is_mine(item) {
                 let tmp = Self {
-                    items: Vec::new(),
+                    items: vec![Resource::power(BuildingType::矿机.power())],
                     results: vec![Resource {
                         resource_type: ResourceType::Direct(Cargo {
                             item_id: item.id,
                             level: 0,
                         }),
-                        num: 4.0, // TODO 根据采矿等级设置成本，或者增加原矿化标记字段，不计成本
+                        num: 9.0 * 4.0, // 暂时是按大矿机9口满带出来算的，产能64.8k
                     }],
                     time: 1.0,
                     info: RecipeFmtInfo {
