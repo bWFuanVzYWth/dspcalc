@@ -1,6 +1,12 @@
-use good_lp::{constraint::ConstraintReference, solvers::clarabel::ClarabelProblem, Expression, SolverModel, Variable};
+use good_lp::{
+    constraint::ConstraintReference, solvers::clarabel::ClarabelProblem, Expression, SolverModel,
+    Variable,
+};
 
-use crate::dsp::{item::{Resource, ResourceType}, recipe::Recipe};
+use crate::dsp::{
+    item::{Resource, ResourceType},
+    recipe::Recipe,
+};
 
 // FIXME 生成这个约束花了大概40%的时间，可以利用配方矩阵的稀疏性大幅度优化
 /// 构建约束：对于每种产物，总产出速率 - 总消耗速率 ≥ 额外净需求速率

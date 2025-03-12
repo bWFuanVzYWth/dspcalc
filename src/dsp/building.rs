@@ -13,6 +13,7 @@ pub enum BuildingType {
     Unknown,
 }
 
+#[must_use]
 pub const fn get_recipe_building(recipe_item: &RecipeItem) -> BuildingType {
     match recipe_item.type_ {
         1 => BuildingType::熔炉,
@@ -25,6 +26,7 @@ pub const fn get_recipe_building(recipe_item: &RecipeItem) -> BuildingType {
     }
 }
 
+#[must_use]
 pub const fn time_scale(building_type: &BuildingType) -> f64 {
     1.0 / match building_type {
         BuildingType::熔炉 => 3.0,

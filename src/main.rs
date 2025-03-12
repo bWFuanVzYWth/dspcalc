@@ -1,19 +1,12 @@
-use std::collections::HashSet;
-
 use dspcalc::dsp::{
-    building::BuildingType,
     item::{
         Cargo, Resource,
-        ResourceType::{self, Direct},
+        ResourceType::{self},
     },
     mine::mines,
-    proliferator::Proliferator,
-    recipe::{flatten_recipes, print_recipe, proliferator_recipes, Recipe, RecipeFmtInfo},
+    recipe::{flatten_recipes, print_recipe, proliferator_recipes},
 };
-use dspdb::{
-    item::{items, ItemData},
-    recipe,
-};
+use dspdb::{item::items, recipe};
 
 fn main() {
     let need_white_cube = Resource {

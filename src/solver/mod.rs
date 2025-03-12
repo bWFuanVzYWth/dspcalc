@@ -7,12 +7,7 @@ use std::collections::HashSet;
 
 use config::config_solver;
 use constraint::{constraint_needs, constraint_recipes};
-use good_lp::{
-    clarabel,
-    constraint::ConstraintReference,
-    solvers::clarabel::{ClarabelProblem, ClarabelSolution},
-    variable, variables, Expression, Solution, SolverModel, Variable,
-};
+use good_lp::{clarabel, variable, variables, SolverModel};
 use objective::minimize_buildings_count;
 use translator::{from_clarabel_solution, CalculatorSolution};
 
@@ -21,14 +16,14 @@ use crate::{
         item::{Resource, ResourceType},
         recipe::Recipe,
     },
-    error::DspCalError::{self, LpSolverError, UnknownLpVarId},
+    error::DspCalError::{self, LpSolverError},
 };
 
 // TODO 检查这个hashSet能否去掉
 fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
     let mut items_type = HashSet::new();
-    for recipe in recipes.iter() {
-        for product in recipe.results.iter() {
+    for recipe in recipes {
+        for product in &recipe.results {
             items_type.insert(product.resource_type);
         }
     }
@@ -39,7 +34,7 @@ pub fn solve(
     all_recipes: &[Recipe],
     needs: &[Resource],
 ) -> Result<Vec<CalculatorSolution>, DspCalError> {
-    let all_productions = find_all_production(&all_recipes);
+    let all_productions = find_all_production(all_recipes);
 
     // 声明变量，每个变量表示某个公式对应的建筑数量
     let mut model = variables!();

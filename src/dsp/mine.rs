@@ -1,11 +1,16 @@
-use super::{building::BuildingType, item::{Cargo, Resource}, recipe::{ Recipe, RecipeFmtInfo}};
-use dspdb::item::ItemData;
+use super::{
+    building::BuildingType,
+    item::{Cargo, Resource},
+    recipe::{Recipe, RecipeFmtInfo},
+};
 use crate::dsp::item::ResourceType::Direct;
+use dspdb::item::ItemData;
 
 fn is_mine(item: &ItemData) -> bool {
     !item.mining_from.is_empty()
 }
 
+#[must_use]
 pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Recipe> {
     let mut mines = Vec::new();
     for item in &raw_items.data_array {

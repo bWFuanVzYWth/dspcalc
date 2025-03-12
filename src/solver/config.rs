@@ -1,6 +1,5 @@
 use good_lp::solvers::clarabel::ClarabelProblem;
 
-
 pub fn config_solver(problem: &mut ClarabelProblem) {
     problem
         .settings()

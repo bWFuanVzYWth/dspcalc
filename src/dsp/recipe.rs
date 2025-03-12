@@ -194,9 +194,10 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
     println!();
 }
 
+#[must_use]
 pub fn proliferator_recipes(items_data: &[ItemData]) -> Vec<Recipe> {
     let mut recipes = Vec::new();
-    for item_data in items_data.iter() {
+    for item_data in items_data {
         generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK3);
         generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK2);
         generate_proliferator_recipe(&mut recipes, item_data, &Proliferator::MK1);
