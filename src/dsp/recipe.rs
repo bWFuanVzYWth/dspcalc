@@ -1,9 +1,8 @@
-use crate::dsp::building::get_recipe_building;
 use crate::dsp::item::{item_name, Cargo, ResourceType};
 use dspdb::{item::ItemData, recipe::RecipeItem};
 
 use super::{
-    building::{time_scale, BuildingType},
+    building::BuildingType,
     item::{Resource, ResourceType::Direct},
     proliferator::Proliferator,
 };
@@ -68,7 +67,7 @@ fn create_recipe(
             })
             .collect(),
         time: modify_time(recipe_item.time_spend as f64)
-            * time_scale(&get_recipe_building(recipe_item)),
+            * BuildingType::from_recipe_item(recipe_item).time_scale(),
         info,
     }
 }
@@ -78,7 +77,7 @@ fn accelerate(recipe_item: &RecipeItem, level: usize) -> Recipe {
         name: recipe_item.name.clone(),
         level,
         speed_up: true,
-        building_type: get_recipe_building(recipe_item),
+        building_type: BuildingType::from_recipe_item(recipe_item),
     };
     create_recipe(
         recipe_item,
@@ -94,7 +93,7 @@ fn productive(recipe_item: &RecipeItem, level: usize) -> Recipe {
         name: recipe_item.name.clone(),
         level,
         speed_up: false,
-        building_type: get_recipe_building(recipe_item),
+        building_type: BuildingType::from_recipe_item(recipe_item),
     };
     create_recipe(
         recipe_item,
@@ -126,7 +125,7 @@ fn recipe_vanilla(recipes: &mut Vec<Recipe>, recipe_item: &RecipeItem) {
         name: recipe_item.name.clone(),
         level: 0,
         speed_up: false,
-        building_type: get_recipe_building(recipe_item),
+        building_type: BuildingType::from_recipe_item(recipe_item),
     };
     recipes.push(create_recipe(recipe_item, 0, |num| num, |time| time, info));
 }
