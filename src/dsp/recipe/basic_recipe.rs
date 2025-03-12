@@ -11,7 +11,7 @@ use super::{Recipe, RecipeFmtInfo};
 impl Recipe {
     fn create_recipe(
         recipe_item: &RecipeItem,
-        level: usize,
+        level: u8,
         modify_result_num: impl Fn(f64) -> f64,
         modify_time: impl Fn(f64) -> f64,
         // power_scale: f64,
@@ -48,7 +48,7 @@ impl Recipe {
         }
     }
 
-    fn accelerate(recipe_item: &RecipeItem, level: usize) -> Self {
+    fn accelerate(recipe_item: &RecipeItem, level: u8) -> Self {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             level,
@@ -64,7 +64,7 @@ impl Recipe {
         )
     }
 
-    fn productive(recipe_item: &RecipeItem, level: usize) -> Self {
+    fn productive(recipe_item: &RecipeItem, level: u8) -> Self {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             level,
@@ -82,14 +82,14 @@ impl Recipe {
 
     pub fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         for level in 1..=Proliferator::MAX_INC_LEVEL {
-            recipes.push(Self::accelerate(recipe_item, usize::from(level)));
+            recipes.push(Self::accelerate(recipe_item, level));
         }
     }
 
     pub fn recipes_productive(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         if !recipe_item.non_productive {
             for level in 1..=Proliferator::MAX_INC_LEVEL {
-                recipes.push(Self::productive(recipe_item, usize::from(level)));
+                recipes.push(Self::productive(recipe_item, level));
             }
         }
     }

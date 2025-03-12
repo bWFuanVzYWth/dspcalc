@@ -21,17 +21,14 @@ impl Recipe {
                         Resource::from_item_level(item_data.id, 0, STACK),
                         Resource::from_item_level(
                             Proliferator::item_id(proliferator),
-                            usize::from(proliferator_level),
-                            (f64::from(Proliferator::inc_level(proliferator)) / f64::from(cargo_level))
+                            proliferator_level,
+                            (f64::from(Proliferator::inc_level(proliferator))
+                                / f64::from(cargo_level))
                                 * STACK
-                                / f64::from(Proliferator::life(proliferator, usize::from(proliferator_level))),
+                                / f64::from(Proliferator::life(proliferator, proliferator_level)),
                         ),
                     ],
-                    results: vec![Resource::from_item_level(
-                        item_data.id,
-                        usize::from(cargo_level),
-                        STACK,
-                    )],
+                    results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
                     time: PROLIFERATOR_TIME,
                     info: RecipeFmtInfo {
                         name: "喷涂".to_string(),

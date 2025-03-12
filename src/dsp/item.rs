@@ -8,7 +8,7 @@ pub enum IndirectResource {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Cargo {
     pub item_id: i16,
-    pub level: usize,
+    pub level: u8,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -25,7 +25,7 @@ pub struct Resource {
 
 impl Resource {
     #[must_use]
-    pub const fn from_item_level(item_id: i16, level: usize, num: f64) -> Self {
+    pub const fn from_item_level(item_id: i16, level: u8, num: f64) -> Self {
         Self {
             resource_type: ResourceType::Direct(Cargo { item_id, level }),
             num,

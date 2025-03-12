@@ -9,7 +9,7 @@ use super::{building::BuildingType, item::Resource};
 #[derive(Clone, Debug)]
 pub struct RecipeFmtInfo {
     pub name: String, // 公式的名字
-    pub level: usize, // 使用的增产剂
+    pub level: u8,    // 使用的增产剂
     pub speed_up: bool,
     pub building_type: BuildingType, // 生产于什么建筑
 }
