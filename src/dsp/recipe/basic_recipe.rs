@@ -14,6 +14,7 @@ impl Recipe {
         level: usize,
         modify_result_num: impl Fn(f64) -> f64,
         modify_time: impl Fn(f64) -> f64,
+        // power_scale: f64,
         info: RecipeFmtInfo,
     ) -> Self {
         Self {
@@ -81,14 +82,14 @@ impl Recipe {
 
     pub fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         for level in 1..=Proliferator::MAX_INC_LEVEL {
-            recipes.push(Self::accelerate(recipe_item, level));
+            recipes.push(Self::accelerate(recipe_item, usize::from(level)));
         }
     }
 
     pub fn recipes_productive(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         if !recipe_item.non_productive {
             for level in 1..=Proliferator::MAX_INC_LEVEL {
-                recipes.push(Self::productive(recipe_item, level));
+                recipes.push(Self::productive(recipe_item, usize::from(level)));
             }
         }
     }

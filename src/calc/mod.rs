@@ -61,8 +61,9 @@ impl Problem {
         // 设置线性规划求解精度
         config_solver(&mut clarabel_problem);
 
+        // FIXME 异常处理
         // 根据公式生成并设置相应的约束
-        constraint_recipes(
+        let _ref_constraint = constraint_recipes(
             &self.recipes,
             &recipe_variables,
             &mut clarabel_problem,
