@@ -6,7 +6,7 @@ use crate::dsp::{
     proliferator::Proliferator,
 };
 
-use super::{Recipe, RecipeFmtInfo};
+use super::{ProliferatorType, Recipe, RecipeFmtInfo};
 
 impl Recipe {
     fn create_recipe(
@@ -56,7 +56,10 @@ impl Recipe {
     fn accelerate(recipe_item: &RecipeItem, level: u8) -> Self {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
-            proliferator_type: None,
+            proliferator_type: Some(ProliferatorType {
+                level,
+                is_speed_up: true,
+            }),
             building_type: BuildingType::from_recipe_item(recipe_item),
         };
         Self::create_recipe(
@@ -72,7 +75,10 @@ impl Recipe {
     fn productive(recipe_item: &RecipeItem, level: u8) -> Self {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
-            proliferator_type: None,
+            proliferator_type: Some(ProliferatorType {
+                level,
+                is_speed_up: false,
+            }),
             building_type: BuildingType::from_recipe_item(recipe_item),
         };
         Self::create_recipe(
@@ -102,7 +108,10 @@ impl Recipe {
     pub fn recipe_vanilla(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
-            proliferator_type: None,
+            proliferator_type: Some(ProliferatorType {
+                level: 0,
+                is_speed_up: false,
+            }),
             building_type: BuildingType::from_recipe_item(recipe_item),
         };
         recipes.push(Self::create_recipe(

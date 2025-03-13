@@ -9,7 +9,7 @@ use good_lp::{clarabel, variable, variables, SolverModel};
 
 use config::config_solver;
 use constraint::{constraint_needs, constraint_recipes};
-use objective::minimize_buildings_count;
+use objective::{minimize_buildings_count, minimize_by_weight};
 use translator::from_clarabel_solution;
 
 use crate::{
@@ -23,6 +23,7 @@ use crate::{
 pub struct Problem {
     pub recipes: Vec<Recipe>,
     pub needs: Vec<Resource>,
+    pub weights: Vec<f64>,
 }
 
 pub struct Solution {
@@ -53,7 +54,8 @@ impl Problem {
             .collect::<Vec<_>>();
 
         // TODO 多种待优化目标，如最小化加权原矿，最小化占地
-        let objective = minimize_buildings_count(&recipe_variables);
+        // let objective = minimize_buildings_count(&recipe_variables);
+        let objective = minimize_by_weight(&recipe_variables, &self.weights);
 
         // 这个方法就叫minimise，不是minimize，奇异搞笑
         let mut clarabel_problem = model.minimise(objective).using(clarabel);

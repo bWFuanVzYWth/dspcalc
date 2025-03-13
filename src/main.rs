@@ -115,6 +115,14 @@ fn main() {
     let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes.data_array);
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
     let recipes = [powers, flatten_basic_recipes, proliferator_recipes, mines].concat();
+    for recipe in &recipes {
+        print_recipe(1.0, recipe, &raw_items.data_array);
+    }
+
+    let weights: Vec<_> = recipes
+        .iter()
+        .map(|recipe| recipe.info.building_type.area())
+        .collect();
 
     // FIXME 检查并确保所有需求都在配方中
     // 声明所有需求
@@ -122,7 +130,11 @@ fn main() {
     // let needs = vec![need_proliferator_mk3];
 
     // 创建问题并求解
-    let problem = Problem { recipes, needs };
+    let problem = Problem {
+        recipes,
+        needs,
+        weights,
+    };
     let solutions = problem.solve().unwrap(); // FIXME 消除这个unwarp
 
     // 输出
