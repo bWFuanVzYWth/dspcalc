@@ -10,18 +10,22 @@ use super::{building::BuildingType, item::Resource};
 #[derive(Clone, Debug)]
 pub struct RecipeFmtInfo {
     pub name: String, // 公式的名字
-    pub level: u8,    // 使用的增产剂
-    pub speed_up: bool,
+    pub proliferator_type: Option<ProliferatorType>,
     pub building_type: BuildingType, // 生产于什么建筑
+}
+
+#[derive(Clone, Debug)]
+pub struct ProliferatorType {
+    pub level: u8,
+    pub is_speed_up: bool,
 }
 
 impl Default for RecipeFmtInfo {
     fn default() -> Self {
         Self {
             name: String::from("Unknown Building"),
-            level: 0,
-            speed_up: true,
-            building_type: BuildingType::Unknown,
+            proliferator_type: None,
+            building_type: BuildingType::矿机, // FIXME 不应该出现未知建筑
         }
     }
 }

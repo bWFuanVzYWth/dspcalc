@@ -11,7 +11,6 @@ pub enum BuildingType {
     矿机,
     喷涂机,
     小太阳,
-    Unknown,
 }
 
 impl BuildingType {
@@ -24,7 +23,7 @@ impl BuildingType {
             4 => Self::制造台,
             5 => Self::对撞机,
             15 => Self::科研站,
-            _ => Self::Unknown,
+            _ => panic!("Fatal: unknown building_type"),
         }
     }
 
@@ -40,7 +39,6 @@ impl BuildingType {
             Self::矿机 => 1.0,
             Self::喷涂机 => 1.0,
             Self::小太阳 => 1.0,
-            Self::Unknown => 1.0,
         }
     }
 
@@ -56,7 +54,20 @@ impl BuildingType {
             Self::矿机 => 25100.0,
             Self::喷涂机 => 90.0,
             Self::小太阳 => 288_000.0,
-            Self::Unknown => 300_000.0, // 按全游戏最吃电的大塔来估算
+        }
+    }
+
+    pub const fn area(&self) -> f64 {
+        match self {
+            Self::熔炉 => 2880.0,
+            Self::化工 => 2160.0,
+            Self::精炼厂 => 960.0,
+            Self::制造台 => 2700.0,
+            Self::对撞机 => 12000.0,
+            Self::科研站 => 1920.0,
+            Self::矿机 => 25100.0,
+            Self::喷涂机 => 90.0,
+            Self::小太阳 => 288_000.0,
         }
     }
 }

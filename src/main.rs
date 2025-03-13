@@ -19,18 +19,19 @@ fn in_min(tick: f64) -> f64 {
 }
 
 pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
-    if recipe.info.level >= 1 {
-        print!(
-            "({}_{})\t",
-            if recipe.info.speed_up {
-                "加速"
+    match &recipe.info.proliferator_type {
+        Some(t) => {
+            if t.level >= 1 {
+                print!(
+                    "({}_{})\t",
+                    if t.is_speed_up { "加速" } else { "增产" },
+                    t.level
+                );
             } else {
-                "增产"
-            },
-            recipe.info.level
-        );
-    } else {
-        print!("(不增产)\t");
+                print!("(无增产)\t");
+            }
+        }
+        None => print!("(不适用)\t"),
     }
 
     print!("{:.3?}\t", in_min(num_scale));
@@ -115,6 +116,7 @@ fn main() {
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
     let recipes = [powers, flatten_basic_recipes, proliferator_recipes, mines].concat();
 
+    // FIXME 检查并确保所有需求都在配方中
     // 声明所有需求
     let needs = vec![need_white_cube];
     // let needs = vec![need_proliferator_mk3];
