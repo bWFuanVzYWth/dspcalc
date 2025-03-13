@@ -62,6 +62,7 @@ impl BuildingType {
     }
 
     // TODO 做出更严格的密铺模块后替换
+    #[must_use]
     pub const fn area(&self) -> f64 {
         match self {
             Self::熔炉 => 2.31118 * 2.31118,

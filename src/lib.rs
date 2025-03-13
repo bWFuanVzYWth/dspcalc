@@ -13,6 +13,6 @@
     clippy::nursery                // 启用实验性的 Lint
 )]
 
+pub mod calc;
 pub mod dsp;
 pub mod error;
-pub mod calc;

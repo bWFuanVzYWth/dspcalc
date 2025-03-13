@@ -9,7 +9,7 @@ use good_lp::{clarabel, variable, variables, SolverModel};
 
 use config::config_solver;
 use constraint::{constraint_needs, constraint_recipes};
-use objective::{minimize_buildings_count, minimize_by_weight};
+use objective::minimize_by_weight;
 use translator::from_clarabel_solution;
 
 use crate::{
