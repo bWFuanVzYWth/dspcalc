@@ -57,11 +57,11 @@ impl Recipe {
                 let mut items = vec![
                     Resource::from_item_level(item_data.id, 0, STACK),
                     Resource::from_item_level(
-                        Proliferator::item_id(proliferator),
+                        proliferator.item_id(),
                         proliferator_level,
                         f64::from(cargo_level) / f64::from(proliferator.inc_level())
                             * STACK
-                            / f64::from(Proliferator::life(proliferator, proliferator_level)),
+                            / f64::from(proliferator.life(proliferator_level)),
                     ),
                 ];
                 items.push(Resource::power(BuildingType::喷涂机.power()));

@@ -33,17 +33,9 @@ impl BuildingType {
     #[must_use]
     pub const fn time_scale(&self) -> f64 {
         match self {
-            Self::熔炉 => 1.0 / 3.0,
+            Self::熔炉 | Self::制造台 | Self::科研站 => 1.0 / 3.0,
             Self::化工 => 1.0 / 2.0,
-            Self::精炼厂 => 1.0,
-            Self::制造台 => 1.0 / 3.0,
-            Self::对撞机 => 1.0,
-            Self::分馏塔 => 1.0,
-            Self::科研站 => 1.0 / 3.0,
-            Self::矿机 => 1.0,
-            Self::喷涂机 => 1.0,
-            Self::小太阳 => 1.0,
-            Self::锅盖 => 1.0,
+            _ => 1.0,
         }
     }
 
@@ -75,8 +67,7 @@ impl BuildingType {
             Self::对撞机 => 9.35815 * 4.6756,
             Self::分馏塔 => 17.0, // 6个一串联，算上补氢占地，平均单台17
             Self::科研站 => 4.4495 * 4.4495 / 15.0,
-            Self::矿机 => 0.0,
-            Self::喷涂机 => 0.0,
+            Self::矿机 | Self::喷涂机 => 0.0,
             Self::小太阳 => 45.576, // 赤道占地
             Self::锅盖 => 7.30726 * 7.30726,
         }
@@ -86,16 +77,13 @@ impl BuildingType {
     #[must_use]
     pub const fn lag(&self) -> f64 {
         match self {
-            Self::熔炉 => 0.0369,
-            Self::化工 => 0.0369,
-            Self::精炼厂 => 0.0369,
-            Self::制造台 => 0.0369,
-            Self::对撞机 => 0.0369,
+            Self::熔炉 | Self::化工 | Self::精炼厂 | Self::制造台 | Self::对撞机 | Self::小太阳 => {
+                0.0369
+            }
             Self::分馏塔 => 1.0,
             Self::科研站 => 0.0197,
             Self::矿机 => 0.0,
             Self::喷涂机 => 0.0332,
-            Self::小太阳 => 0.0369,
             Self::锅盖 => 0.0262,
         }
     }

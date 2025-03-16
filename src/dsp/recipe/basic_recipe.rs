@@ -31,6 +31,7 @@ impl Recipe {
                     item_id: *item,
                     level,
                 }),
+                #[allow(clippy::cast_precision_loss)]
                 num: *count as f64,
             })
             .collect();
@@ -47,9 +48,11 @@ impl Recipe {
                         item_id: *res,
                         level: 0,
                     }),
+                    #[allow(clippy::cast_precision_loss)]
                     num: modify_result_num(*count as f64),
                 })
                 .collect(),
+            #[allow(clippy::cast_precision_loss)]
             time: modify_time(recipe_item.time_spend as f64)
                 * BuildingType::from_recipe_item(recipe_item).time_scale(),
             info,

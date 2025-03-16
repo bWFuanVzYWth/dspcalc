@@ -18,11 +18,11 @@ const POWER_TABLE: [f64; INC_LEVEL_MAX as usize + 1] =
     [1.0, 1.3, 1.7, 2.1, 2.5, 2.9, 3.3, 3.7, 4.1, 4.5, 4.9];
 
 impl Proliferator {
-    pub const MAX_INC_LEVEL: u8 = Self::inc_level(&Self::MK3);
+    pub const MAX_INC_LEVEL: u8 = Self::MK3.inc_level();
 
     #[must_use]
-    pub const fn item_id(t: &Self) -> i16 {
-        match t {
+    pub const fn item_id(&self) -> i16 {
+        match &self {
             Self::MK1 => 1141,
             Self::MK2 => 1142,
             Self::MK3 => 1143,
@@ -40,16 +40,16 @@ impl Proliferator {
 
     #[must_use]
     #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-    pub const fn life(t: &Self, level: u8) -> u8 {
+    pub const fn life(&self, level: u8) -> u8 {
         (Self::increase(level)
-            * match t {
+            * match &self {
                 Self::MK1 => 12.0,
                 Self::MK2 => 24.0,
                 Self::MK3 => 60.0,
             }) as u8
     }
 
-    const fn min_inc_level_max(level: u8) -> u8 {
+    const fn clamp_inc_level(level: u8) -> u8 {
         if level < INC_LEVEL_MAX {
             level
         } else {
@@ -60,18 +60,18 @@ impl Proliferator {
     #[must_use]
     #[allow(clippy::indexing_slicing)]
     pub const fn increase(level: u8) -> f64 {
-        1.0 + INC_TABLE[Self::min_inc_level_max(level) as usize]
+        1.0 + INC_TABLE[Self::clamp_inc_level(level) as usize]
     }
 
     #[must_use]
     #[allow(clippy::indexing_slicing)]
     pub const fn accelerate(level: u8) -> f64 {
-        1.0 + ACC_TABLE[Self::min_inc_level_max(level) as usize]
+        1.0 + ACC_TABLE[Self::clamp_inc_level(level) as usize]
     }
 
     #[must_use]
     #[allow(clippy::indexing_slicing)]
     pub const fn power(level: u8) -> f64 {
-        POWER_TABLE[Self::min_inc_level_max(level) as usize]
+        POWER_TABLE[Self::clamp_inc_level(level) as usize]
     }
 }
