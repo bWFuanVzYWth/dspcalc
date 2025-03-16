@@ -104,6 +104,7 @@ fn main() {
     let raw_recipes = dspdb::recipe::recipes();
     let raw_items = dspdb::item::items();
 
+    // FIXME dspdb的一些公式的生产有问题
     // FIXME 重氢，光子，电池：不是原矿，但是有公式生产
     // TODO 接入禁用公式列表（直接移除对应的约束）
     // TODO 增加真正的原矿化（直接移除相关的公式）
@@ -113,7 +114,8 @@ fn main() {
     let powers = Recipe::powers();
     let mines = Recipe::mines(&raw_items);
     let photons = Recipe::photons();
-    let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes.data_array);
+    let flatten_basic_recipes =
+        Recipe::flatten_recipes(&raw_recipes.data_array, &raw_items.data_array);
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
     let recipes = [
         powers,

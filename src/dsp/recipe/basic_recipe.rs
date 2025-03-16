@@ -1,3 +1,4 @@
+use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
 use crate::dsp::{
@@ -98,8 +99,24 @@ impl Recipe {
         }
     }
 
-    pub fn recipes_productive(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
-        if !recipe_item.non_productive {
+    fn recipe_can_be_productive(recipe_item: &RecipeItem, items: &[ItemData]) -> bool {
+        let mut flag = !recipe_item.non_productive;
+        for item_id in &recipe_item.items {
+            items
+                .iter()
+                .find(|item| item.id == *item_id)
+                .iter()
+                .for_each(|item| flag &= item.productive);
+        }
+        flag
+    }
+
+    pub fn recipes_productive(
+        recipes: &mut Vec<Self>,
+        recipe_item: &RecipeItem,
+        items: &[ItemData],
+    ) {
+        if Self::recipe_can_be_productive(recipe_item, items) {
             // for level in 1..=Proliferator::MAX_INC_LEVEL {
             for level in [1, 2, 4] {
                 recipes.push(Self::productive(recipe_item, level));

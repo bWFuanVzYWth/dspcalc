@@ -1,9 +1,10 @@
 mod basic_recipe;
 mod mine;
+mod photons;
 mod power;
 mod proliferator;
-mod photons;
 
+use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
 use super::{building::BuildingType, item::Resource};
@@ -41,11 +42,11 @@ pub struct Recipe {
 
 impl Recipe {
     #[must_use]
-    pub fn flatten_recipes(basic_recipes: &[RecipeItem]) -> Vec<Self> {
+    pub fn flatten_recipes(basic_recipes: &[RecipeItem], items: &[ItemData]) -> Vec<Self> {
         let mut recipes = Vec::new();
         for recipe_item in basic_recipes {
             Self::recipe_vanilla(&mut recipes, recipe_item);
-            Self::recipes_productive(&mut recipes, recipe_item);
+            Self::recipes_productive(&mut recipes, recipe_item, items);
             Self::recipes_accelerate(&mut recipes, recipe_item);
         }
         recipes
