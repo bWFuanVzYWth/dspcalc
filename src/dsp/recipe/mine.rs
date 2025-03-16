@@ -14,7 +14,7 @@ impl Recipe {
     pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Self> {
         let mut mines = Vec::new();
         for item in &raw_items.data_array {
-            let is_mine = |item: &ItemData| !item.mining_from.is_empty();
+            let is_mine = |test_item: &ItemData| !test_item.mining_from.is_empty();
             if is_mine(item) {
                 let tmp = Self {
                     items: vec![Resource::power(BuildingType::矿机.power())],

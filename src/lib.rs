@@ -7,7 +7,9 @@
     clippy::unreachable,           // 禁止使用 `unreachable!`
     clippy::unimplemented,          // 禁止使用 `unimplemented!`
 
-    clippy::shadow                  // 禁用影子变量
+    clippy::shadow_unrelated,
+    clippy::shadow_same,
+    clippy::shadow_unrelated,
 )]
 #![warn(
     clippy::pedantic,              // 启用所有严格的 Lint
