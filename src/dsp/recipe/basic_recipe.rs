@@ -1,3 +1,5 @@
+use strum::IntoEnumIterator;
+
 use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
@@ -92,10 +94,15 @@ impl Recipe {
         )
     }
 
-    pub fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
-        // for level in 1..=Proliferator::MAX_INC_LEVEL {
-        for level in [1, 2, 4] {
-            recipes.push(Self::accelerate(recipe_item, level));
+    pub fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem, cocktail: bool) {
+        if cocktail {
+            for level in 1..=Proliferator::MAX_INC_LEVEL {
+                recipes.push(Self::accelerate(recipe_item, level));
+            }
+        } else {
+            Proliferator::iter().for_each(|proliferator| {
+                recipes.push(Self::accelerate(recipe_item, proliferator.inc_level()));
+            });
         }
     }
 
@@ -115,11 +122,17 @@ impl Recipe {
         recipes: &mut Vec<Self>,
         recipe_item: &RecipeItem,
         items: &[ItemData],
+        cocktail: bool,
     ) {
         if Self::recipe_can_be_productive(recipe_item, items) {
-            // for level in 1..=Proliferator::MAX_INC_LEVEL {
-            for level in [1, 2, 4] {
-                recipes.push(Self::productive(recipe_item, level));
+            if cocktail {
+                for level in 1..=Proliferator::MAX_INC_LEVEL {
+                    recipes.push(Self::productive(recipe_item, level));
+                }
+            } else {
+                Proliferator::iter().for_each(|proliferator| {
+                    recipes.push(Self::productive(recipe_item, proliferator.inc_level()));
+                });
             }
         }
     }

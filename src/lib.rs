@@ -5,7 +5,9 @@
     clippy::panic_in_result_fn,    // 禁止在返回 `Result` 的函数中调用 `panic!`
     clippy::todo,                  // 禁止使用 `todo!`
     clippy::unreachable,           // 禁止使用 `unreachable!`
-    clippy::unimplemented          // 禁止使用 `unimplemented!`
+    clippy::unimplemented,          // 禁止使用 `unimplemented!`
+
+    clippy::shadow                  // 禁用影子变量
 )]
 #![warn(
     clippy::pedantic,              // 启用所有严格的 Lint

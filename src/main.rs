@@ -84,6 +84,10 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
     println!();
 }
 
+struct Config {
+    cocktail: bool,
+}
+
 fn main() {
     let need_white_cube = Resource {
         resource_type: ResourceType::Direct(Cargo {
@@ -110,13 +114,19 @@ fn main() {
     // TODO 增加真正的原矿化（直接移除相关的公式）
     // TODO 物流卡顿：爪子进出建筑，大塔，传送带等
 
+    // 设置
+    let config = Config { cocktail: false };
+
     // 生成所有的公式
     let powers = Recipe::powers();
     let mines = Recipe::mines(&raw_items);
     let photons = Recipe::photons();
-    let flatten_basic_recipes =
-        Recipe::flatten_recipes(&raw_recipes.data_array, &raw_items.data_array);
-    let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
+    let flatten_basic_recipes = Recipe::flatten_recipes(
+        &raw_recipes.data_array,
+        &raw_items.data_array,
+        config.cocktail,
+    );
+    let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array, config.cocktail);
     let recipes = [
         powers,
         flatten_basic_recipes,

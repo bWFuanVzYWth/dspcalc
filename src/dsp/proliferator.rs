@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, strum_macros::EnumIter)]
 pub enum Proliferator {
     MK1,
     MK2,
@@ -30,8 +30,8 @@ impl Proliferator {
     }
 
     #[must_use]
-    pub const fn inc_level(t: &Self) -> u8 {
-        match t {
+    pub const fn inc_level(&self) -> u8 {
+        match &self {
             Self::MK1 => 1,
             Self::MK2 => 2,
             Self::MK3 => 4,
