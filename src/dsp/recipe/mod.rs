@@ -2,6 +2,7 @@ mod basic_recipe;
 mod mine;
 mod power;
 mod proliferator;
+mod photons;
 
 use dspdb::recipe::RecipeItem;
 

@@ -92,14 +92,16 @@ impl Recipe {
     }
 
     pub fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
-        for level in 1..=Proliferator::MAX_INC_LEVEL {
+        // for level in 1..=Proliferator::MAX_INC_LEVEL {
+        for level in [1, 2, 4] {
             recipes.push(Self::accelerate(recipe_item, level));
         }
     }
 
     pub fn recipes_productive(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
         if !recipe_item.non_productive {
-            for level in 1..=Proliferator::MAX_INC_LEVEL {
+            // for level in 1..=Proliferator::MAX_INC_LEVEL {
+            for level in [1, 2, 4] {
                 recipes.push(Self::productive(recipe_item, level));
             }
         }

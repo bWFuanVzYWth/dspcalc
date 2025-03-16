@@ -14,8 +14,11 @@ impl Recipe {
     ) {
         const STACK: f64 = 4.0;
         const PROLIFERATOR_TIME: f64 = 2.0;
-        for cargo_level in 1..=Proliferator::inc_level(proliferator) {
-            for proliferator_level in 0..=Proliferator::MAX_INC_LEVEL {
+        // for cargo_level in 1..=Proliferator::inc_level(proliferator)
+        let cargo_level = Proliferator::inc_level(proliferator);
+        {
+            // for proliferator_level in 0..=Proliferator::MAX_INC_LEVEL
+            for proliferator_level in [0, 1, 2, 4] {
                 recipes.push(Self {
                     items: {
                         let mut items = vec![

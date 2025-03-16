@@ -12,6 +12,7 @@ pub enum BuildingType {
     矿机,
     喷涂机,
     小太阳,
+    锅盖,
 }
 
 impl BuildingType {
@@ -42,6 +43,7 @@ impl BuildingType {
             Self::矿机 => 1.0,
             Self::喷涂机 => 1.0,
             Self::小太阳 => 1.0,
+            Self::锅盖 => 1.0,
         }
     }
 
@@ -58,6 +60,7 @@ impl BuildingType {
             Self::矿机 => 25400.0, // FIXME 检查小数点后的数字
             Self::喷涂机 => 90.0,
             Self::小太阳 => 288_000.0,
+            Self::锅盖 => 0.0,
         }
     }
 
@@ -75,6 +78,25 @@ impl BuildingType {
             Self::矿机 => 0.0,
             Self::喷涂机 => 0.0,
             Self::小太阳 => 45.576, // 赤道占地
+            Self::锅盖 => 7.30726 * 7.30726,
+        }
+    }
+
+    // TODO 重测卡顿表，注意这是模块卡顿了，不是单建筑的
+    #[must_use]
+    pub const fn lag(&self) -> f64 {
+        match self {
+            Self::熔炉 => 0.0369,
+            Self::化工 => 0.0369,
+            Self::精炼厂 => 0.0369,
+            Self::制造台 => 0.0369,
+            Self::对撞机 => 0.0369,
+            Self::分馏塔 => 1.0,
+            Self::科研站 => 0.0197,
+            Self::矿机 => 0.0,
+            Self::喷涂机 => 0.0332,
+            Self::小太阳 => 0.0369,
+            Self::锅盖 => 0.0262,
         }
     }
 }

@@ -112,16 +112,29 @@ fn main() {
     // 生成所有的公式
     let powers = Recipe::powers();
     let mines = Recipe::mines(&raw_items);
+    let photons = Recipe::photons();
     let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes.data_array);
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array);
-    let recipes = [powers, flatten_basic_recipes, proliferator_recipes, mines].concat();
+    let recipes = [
+        powers,
+        flatten_basic_recipes,
+        proliferator_recipes,
+        mines,
+        photons,
+    ]
+    .concat();
     for recipe in &recipes {
         print_recipe(1.0, recipe, &raw_items.data_array);
     }
 
+    // let weights: Vec<_> = recipes
+    //     .iter()
+    //     .map(|recipe| recipe.info.building_type.area())
+    //     .collect();
+
     let weights: Vec<_> = recipes
         .iter()
-        .map(|recipe| recipe.info.building_type.area())
+        .map(|recipe| recipe.info.building_type.lag())
         .collect();
 
     // FIXME 检查并确保所有需求都在配方中
