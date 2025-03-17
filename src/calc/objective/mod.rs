@@ -1,5 +1,7 @@
 use good_lp::{Expression, Variable};
 
+// TODO 把各种权重统一api
+
 pub fn minimize_buildings_count(recipe_variables: &[Variable]) -> Expression {
     recipe_variables.iter().copied().sum::<Expression>()
 }

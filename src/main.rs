@@ -112,10 +112,9 @@ fn main() {
     // FIXME 重氢，光子，电池：不是原矿，但是有公式生产
     // TODO 接入禁用公式列表（直接移除对应的约束）
     // TODO 增加真正的原矿化（直接移除相关的公式）
-    // TODO 物流卡顿：爪子进出建筑，大塔，传送带等
 
     // 设置
-    let config = Config { cocktail: false };
+    let config = Config { cocktail: true };
 
     // 生成所有的公式
     let powers = Recipe::powers();

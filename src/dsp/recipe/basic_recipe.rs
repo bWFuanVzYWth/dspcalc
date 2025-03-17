@@ -112,6 +112,7 @@ impl Recipe {
     fn recipe_can_be_productive(recipe_item: &RecipeItem, items: &[ItemData]) -> bool {
         let mut flag = !recipe_item.non_productive;
         for item_id in &recipe_item.items {
+            // FIXME 优化 太低效了
             items
                 .iter()
                 .find(|item| item.id == *item_id)

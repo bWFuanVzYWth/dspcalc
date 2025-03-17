@@ -53,7 +53,6 @@ impl Problem {
             .map(|_| model.add(variable().min(0.0)))
             .collect::<Vec<_>>();
 
-        // TODO 多种待优化目标，如最小化加权原矿，最小化占地
         // let objective = minimize_buildings_count(&recipe_variables);
         let objective = minimize_by_weight(&recipe_variables, &self.weights);
 
