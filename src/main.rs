@@ -105,8 +105,8 @@ fn main() {
         num: 10000.0,
     };
 
-    let raw_recipes = dspdb::recipe::recipes();
-    let raw_items = dspdb::item::items();
+    let raw_recipes = dspdb::recipe::recipes_data();
+    let raw_items = dspdb::item::items_data();
 
     // FIXME dspdb的一些公式的生产有问题
     // FIXME 重氢，光子，电池：不是原矿，但是有公式生产
@@ -121,11 +121,11 @@ fn main() {
     let mines = Recipe::mines(&raw_items);
     let photons = Recipe::photons();
     let flatten_basic_recipes = Recipe::flatten_recipes(
-        &raw_recipes.data_array,
-        &raw_items.data_array,
+        &raw_recipes,
+        &raw_items,
         config.cocktail,
     );
-    let proliferator_recipes = Recipe::proliferator_recipes(&raw_items.data_array, config.cocktail);
+    let proliferator_recipes = Recipe::proliferator_recipes(&raw_items, config.cocktail);
     let recipes = [
         powers,
         flatten_basic_recipes,
@@ -135,7 +135,7 @@ fn main() {
     ]
     .concat();
     for recipe in &recipes {
-        print_recipe(1.0, recipe, &raw_items.data_array);
+        print_recipe(1.0, recipe, &raw_items);
     }
 
     // let weights: Vec<_> = recipes
@@ -164,7 +164,7 @@ fn main() {
     // 输出
     let price = solutions.iter().map(|a| a.num).sum::<f64>();
     for solution in solutions {
-        print_recipe(solution.num, &solution.recipe, &raw_items.data_array);
+        print_recipe(solution.num, &solution.recipe, &raw_items);
     }
     print!("总成本：{}", price / 3600.0);
 }

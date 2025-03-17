@@ -11,9 +11,9 @@ use super::{Recipe, RecipeFmtInfo};
 // FIXME 耗电量计算不正确
 impl Recipe {
     #[must_use]
-    pub fn mines(raw_items: &dspdb::item::ItemProtoSet) -> Vec<Self> {
+    pub fn mines(items: &[dspdb::item::ItemData]) -> Vec<Self> {
         let mut mines = Vec::new();
-        for item in &raw_items.data_array {
+        for item in items {
             let is_mine = |test_item: &ItemData| !test_item.mining_from.is_empty();
             if is_mine(item) {
                 let tmp = Self {
