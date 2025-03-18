@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use strum::IntoEnumIterator;
 
 use dspdb::item::ItemData;
@@ -109,17 +111,23 @@ impl Recipe {
         }
     }
 
-    fn recipe_can_be_productive(recipe_item: &RecipeItem, items: &[ItemData]) -> bool {
-        let mut flag = !recipe_item.non_productive;
-        for item_id in &recipe_item.items {
-            // FIXME 优化 太低效了
-            items
-                .iter()
-                .find(|item| item.id == *item_id)
-                .iter()
-                .for_each(|item| flag &= item.productive);
+    // 预处理物品增产支持信息
+    fn build_productive_map(items: &[ItemData]) -> HashMap<i16, bool> {
+        items.iter().map(|i| (i.id, i.productive)).collect()
+    }
+
+    fn recipe_can_be_productive(
+        recipe_item: &RecipeItem,
+        productive_map: &HashMap<i16, bool>,
+    ) -> bool {
+        if recipe_item.non_productive {
+            return false;
         }
-        flag
+
+        recipe_item
+            .items
+            .iter()
+            .all(|id| productive_map.get(id).copied().unwrap_or(false))
     }
 
     pub fn recipes_productive(
@@ -128,7 +136,8 @@ impl Recipe {
         items: &[ItemData],
         cocktail: bool,
     ) {
-        if Self::recipe_can_be_productive(recipe_item, items) {
+        let productive_map = Self::build_productive_map(items);
+        if Self::recipe_can_be_productive(recipe_item, &productive_map) {
             if cocktail {
                 for level in 1..=Proliferator::MAX_INC_LEVEL {
                     recipes.push(Self::productive(recipe_item, level));

@@ -6,9 +6,6 @@ use crate::dsp::item::{Resource, ResourceType};
 
 use super::{ProcessedRecipes, RecipeExtra};
 
-// TODO 给公式命名
-
-// 新constraint_recipes实现
 pub fn constraint_recipes(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
@@ -26,7 +23,6 @@ pub fn constraint_recipes(
         .collect()
 }
 
-// 新constraint_needs实现
 pub fn constraint_needs(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
@@ -38,7 +34,6 @@ pub fn constraint_needs(
         .collect()
 }
 
-// 新create_constraint实现
 fn create_constraint(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
@@ -61,9 +56,5 @@ fn create_constraint(
         .map(|(recipe, rate)| *rate * recipe.variable)
         .sum();
 
-    // problem.add_constraint_with_name(
-    //     (results_expr - items_expr).geq(need.num),
-    //     format!("{}_constraint", need.resource_type),
-    // )
     problem.add_constraint((results_expr - items_expr).geq(need.num))
 }
