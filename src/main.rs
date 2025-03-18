@@ -134,9 +134,9 @@ fn main() {
         photons,
     ]
     .concat();
-    for recipe in &recipes {
-        print_recipe(1.0, recipe, &raw_items);
-    }
+    // for recipe in &recipes {
+    //     print_recipe(1.0, recipe, &raw_items);
+    // }
 
     // let weights: Vec<_> = recipes
     //     .iter()

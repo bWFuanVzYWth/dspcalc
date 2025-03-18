@@ -41,9 +41,27 @@ fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
     items_type.into_iter().collect()
 }
 
+// struct RecipeLut<'a> {
+//     items: HashSet<&'a Recipe>,
+//     results: HashSet<&'a Recipe>,
+// }
+
+// impl RecipeLut<'_> {
+//     pub fn from(recipes: &[Recipe], productions: &[ResourceType]) -> Vec<Self> {
+//         let mut lut = productions
+//             .iter()
+//             .map(|production| RecipeLut {
+//                 items: HashSet::new(),
+//                 results: HashSet::new(),
+//             })
+//             .collect();
+//     }
+// }
+
 impl Problem {
     pub fn solve(&self) -> Result<Vec<Solution>, DspCalError> {
-        let all_productions = find_all_production(&self.recipes);
+        // 加速结构
+        let productions = find_all_production(&self.recipes);
 
         // 声明变量，每个变量表示某个公式对应的建筑数量
         let mut model = variables!();
@@ -68,7 +86,7 @@ impl Problem {
             &self.recipes,
             &recipe_variables,
             &mut clarabel_problem,
-            &all_productions,
+            &productions,
         );
 
         // 根据需求列表生成并设置相应的约束

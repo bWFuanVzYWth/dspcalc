@@ -122,7 +122,7 @@ dependencies = [
 [[package]]
 name = "dspdb"
 version = "0.1.0"
-source = "git+https://github.com/bWFuanVzYWth/dspdb?branch=master#c69a66e609d202999135cb86ef31da3b163d51ae"
+source = "git+https://github.com/bWFuanVzYWth/dspdb?branch=master#e50dc9120ef82e1bfe59e21858087f5fff5bebbe"
 dependencies = [
  "phf",
  "phf_codegen",
