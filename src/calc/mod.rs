@@ -3,7 +3,7 @@ mod constraint;
 mod objective;
 mod translator;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use good_lp::{clarabel, variable, variables, SolverModel, Variable};
 
@@ -31,14 +31,13 @@ pub struct Solution {
     pub num: f64,
 }
 
+// 改进find_all_production实现
 fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
-    let mut items_type = HashSet::new();
-    for recipe in recipes {
-        for product in &recipe.results {
-            items_type.insert(product.resource_type);
-        }
-    }
-    items_type.into_iter().collect()
+    recipes.iter()
+        .flat_map(|r| r.results.iter().map(|r| r.resource_type))
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 pub struct RecipeExtra {
@@ -47,8 +46,48 @@ pub struct RecipeExtra {
     pub weight: f64,
 }
 
+struct ProcessedRecipes<'a> {
+    consumes: HashMap<ResourceType, Vec<(&'a RecipeExtra, f64)>>,
+    produces: HashMap<ResourceType, Vec<(&'a RecipeExtra, f64)>>,
+}
+
+impl<'a> ProcessedRecipes<'a> {
+    fn new(recipes: &'a [RecipeExtra]) -> Self {
+        let mut consumes: HashMap<ResourceType, Vec<_>> = HashMap::new();
+        let mut produces: HashMap<ResourceType, Vec<_>> = HashMap::new();
+        for recipe in recipes {
+            let time = recipe.recipe.time;
+            // 处理消耗项
+            for item in &recipe.recipe.items {
+                let rate = item.num / time;
+                consumes
+                    .entry(item.resource_type)
+                    .or_default()
+                    .push((recipe, rate));
+            }
+            // 处理生产项
+            for result in &recipe.recipe.results {
+                let rate = result.num / time;
+                produces
+                    .entry(result.resource_type)
+                    .or_default()
+                    .push((recipe, rate));
+            }
+        }
+        Self { consumes, produces }
+    }
+}
+
 impl Problem {
     pub fn solve(&self) -> Result<Vec<Solution>, DspCalError> {
+        // 验证权重数量
+        if self.recipes.len() != self.weights.len() {
+            return Err(DspCalError::MismatchedRecipeWeights(
+                self.recipes.len(),
+                self.weights.len(),
+            ));
+        }
+
         // 加速结构
         let productions = find_all_production(&self.recipes);
 
@@ -74,12 +113,14 @@ impl Problem {
         // 设置线性规划求解精度
         config_solver(&mut clarabel_problem);
 
+        // 在Problem::solve中添加预处理
+        let processed = ProcessedRecipes::new(&recipe_extra);
+
         // 根据公式生成并设置相应的约束
-        let _ref_constraint =
-            constraint_recipes(&recipe_extra, &mut clarabel_problem, &productions);
+        let _ref_constraint = constraint_recipes(&processed, &mut clarabel_problem, &productions);
 
         // 根据需求列表生成并设置相应的约束
-        let _constraint_need = constraint_needs(&recipe_extra, &mut clarabel_problem, &self.needs);
+        let _constraint_need = constraint_needs(&processed, &mut clarabel_problem, &self.needs);
 
         // 求解
         let clarabel_solution = clarabel_problem.solve().map_err(LpSolverError)?;

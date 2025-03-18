@@ -2,13 +2,13 @@ use dspcalc::{
     calc::Problem,
     dsp::{
         item::{
-            item_name, Cargo, Resource,
+            Cargo, Resource,
             ResourceType::{self},
         },
         recipe::Recipe,
     },
 };
-use dspdb::item::ItemData;
+use dspdb::item::{item_name, ItemData};
 
 fn in_sec(tick: f64) -> f64 {
     tick / 60.0
@@ -44,7 +44,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
             ResourceType::Direct(cargo) => print!(
                 "{:.6} * {}_{}, ",
                 num_scale * resource.num / recipe.time,
-                item_name(cargo.item_id, items),
+                item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
                 cargo.level
             ),
             ResourceType::Indirect(indirect_resource) => match indirect_resource {
@@ -67,7 +67,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
             ResourceType::Direct(cargo) => print!(
                 "{:.6} * {}_{}, ",
                 num_scale * resource.num / recipe.time,
-                item_name(cargo.item_id, items),
+                item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
                 cargo.level
             ),
             ResourceType::Indirect(indirect_resource) => match indirect_resource {
