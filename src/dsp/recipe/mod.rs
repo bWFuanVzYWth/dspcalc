@@ -7,9 +7,8 @@ mod proliferator;
 use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
-use crate::error::DspCalError;
-
 use super::{building::BuildingType, item::Resource};
+use crate::error::DspCalError;
 
 #[derive(Clone, Debug)]
 pub struct RecipeFmtInfo {

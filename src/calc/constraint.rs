@@ -2,16 +2,15 @@ use good_lp::{
     constraint::ConstraintReference, solvers::clarabel::ClarabelProblem, Expression, SolverModel,
 };
 
-use crate::dsp::item::{Resource, ResourceType};
-
 use super::ProcessedRecipes;
+use crate::dsp::item::{Resource, ResourceType};
 
 pub fn constraint_recipes(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
-    all_productions: &[ResourceType],
+    productions: &[ResourceType],
 ) -> Vec<ConstraintReference> {
-    all_productions
+    productions
         .iter()
         .map(|&prod| {
             let resource = Resource {

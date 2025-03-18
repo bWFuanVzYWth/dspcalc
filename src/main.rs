@@ -1,10 +1,7 @@
 use dspcalc::{
     calc::Problem,
     dsp::{
-        item::{
-            Cargo, Resource,
-            ResourceType::{self},
-        },
+        item::{Cargo, Resource, ResourceType},
         recipe::Recipe,
     },
     error::DspCalError,
@@ -131,6 +128,7 @@ fn main() -> Result<(), DspCalError> {
         photons,
     ]
     .concat();
+
     // for recipe in &recipes {
     //     print_recipe(1.0, recipe, &raw_items);
     // }

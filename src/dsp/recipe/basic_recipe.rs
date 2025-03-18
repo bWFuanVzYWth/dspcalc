@@ -5,6 +5,7 @@ use strum::IntoEnumIterator;
 use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
+use super::{ProliferatorType, Recipe, RecipeFmtInfo};
 use crate::{
     dsp::{
         building::BuildingType,
@@ -14,12 +15,10 @@ use crate::{
     error::DspCalError,
 };
 
-use super::{ProliferatorType, Recipe, RecipeFmtInfo};
-
 impl Recipe {
     fn create_recipe(
         recipe_item: &RecipeItem,
-        level: u8,
+        items_level: u8,
         modify_result_num: impl Fn(f64) -> f64,
         modify_time: impl Fn(f64) -> f64,
         power_scale: f64,
@@ -38,7 +37,7 @@ impl Recipe {
             .map(|(item, count)| Resource {
                 resource_type: ResourceType::Direct(Cargo {
                     item_id: *item,
-                    level,
+                    level: items_level,
                 }),
                 #[allow(clippy::cast_precision_loss)]
                 num: *count as f64,
@@ -70,11 +69,11 @@ impl Recipe {
         })
     }
 
-    fn accelerate(recipe_item: &RecipeItem, level: u8) -> Result<Self, DspCalError> {
+    fn accelerate(recipe_item: &RecipeItem, items_level: u8) -> Result<Self, DspCalError> {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             proliferator_type: Some(ProliferatorType {
-                level,
+                level: items_level,
                 is_speed_up: true,
             }),
             building_type: BuildingType::from_recipe_item(recipe_item)
@@ -82,19 +81,19 @@ impl Recipe {
         };
         Self::create_recipe(
             recipe_item,
-            level,
+            items_level,
             |num| num,
-            |time| time / Proliferator::accelerate(level),
-            Proliferator::power(level),
+            |time| time / Proliferator::accelerate(items_level),
+            Proliferator::power(items_level),
             info,
         )
     }
 
-    fn productive(recipe_item: &RecipeItem, level: u8) -> Result<Self, DspCalError> {
+    fn productive(recipe_item: &RecipeItem, items_level: u8) -> Result<Self, DspCalError> {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             proliferator_type: Some(ProliferatorType {
-                level,
+                level: items_level,
                 is_speed_up: false,
             }),
             building_type: BuildingType::from_recipe_item(recipe_item)
@@ -102,10 +101,10 @@ impl Recipe {
         };
         Self::create_recipe(
             recipe_item,
-            level,
-            |num| num * Proliferator::increase(level),
+            items_level,
+            |num| num * Proliferator::increase(items_level),
             |time| time,
-            Proliferator::power(level),
+            Proliferator::power(items_level),
             info,
         )
     }
@@ -118,8 +117,8 @@ impl Recipe {
         cocktail: bool,
     ) -> Result<(), DspCalError> {
         if cocktail {
-            for level in 1..=Proliferator::MAX_INC_LEVEL {
-                recipes.push(Self::accelerate(recipe_item, level)?);
+            for items_level in 1..=Proliferator::MAX_INC_LEVEL {
+                recipes.push(Self::accelerate(recipe_item, items_level)?);
             }
         } else {
             for proliferator in Proliferator::iter() {
@@ -141,11 +140,12 @@ impl Recipe {
         if recipe_item.non_productive {
             return false;
         }
-
-        recipe_item
-            .items
-            .iter()
-            .all(|id| productive_map.get(id).copied().expect("unknown item id"))
+        recipe_item.items.iter().all(|id| {
+            productive_map
+                .get(id)
+                .copied()
+                .expect("fatal error: unknown item id.")
+        })
     }
 
     /// # Errors
@@ -159,8 +159,8 @@ impl Recipe {
         let productive_map = Self::build_productive_map(items);
         if Self::recipe_can_be_productive(recipe_item, &productive_map) {
             if cocktail {
-                for level in 1..=Proliferator::MAX_INC_LEVEL {
-                    recipes.push(Self::productive(recipe_item, level)?);
+                for items_level in 1..=Proliferator::MAX_INC_LEVEL {
+                    recipes.push(Self::productive(recipe_item, items_level)?);
                 }
             } else {
                 for proliferator in Proliferator::iter() {

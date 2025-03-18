@@ -31,9 +31,9 @@ pub struct Solution {
     pub num: f64,
 }
 
-// 改进find_all_production实现
 fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
-    recipes.iter()
+    recipes
+        .iter()
         .flat_map(|r| r.results.iter().map(|r| r.resource_type))
         .collect::<HashSet<_>>()
         .into_iter()
@@ -79,6 +79,8 @@ impl<'a> ProcessedRecipes<'a> {
 }
 
 impl Problem {
+    /// # Errors
+    /// 如果问题求解失败，返回错误
     pub fn solve(&self) -> Result<Vec<Solution>, DspCalError> {
         // 验证权重数量
         if self.recipes.len() != self.weights.len() {
@@ -88,10 +90,10 @@ impl Problem {
             ));
         }
 
-        // 加速结构
+        // 找出所有公式产物，所有的产物都不能无中生有，由此可以构建约束
         let productions = find_all_production(&self.recipes);
 
-        // 绑定公式、权重和变量，每个变量表示某个公式对应的建筑数量
+        // 绑定公式、公式权重和线性规划变量，变量即建筑数量
         let mut model = variables!();
         let recipe_extra = self
             .recipes
@@ -104,7 +106,7 @@ impl Problem {
             })
             .collect::<Vec<_>>();
 
-        // let objective = minimize_buildings_count(&recipe_variables);
+        // 定义优化目标，暂时只支持权重表的形式
         let objective = minimize_by_weight(&recipe_extra);
 
         // 这个方法就叫minimise，不是minimize，奇异搞笑
@@ -113,7 +115,7 @@ impl Problem {
         // 设置线性规划求解精度
         config_solver(&mut clarabel_problem);
 
-        // 在Problem::solve中添加预处理
+        // 预处理，构建从产品种类到相关公式的索引，加速约束构建
         let processed = ProcessedRecipes::new(&recipe_extra);
 
         // 根据公式生成并设置相应的约束
@@ -125,7 +127,7 @@ impl Problem {
         // 求解
         let clarabel_solution = clarabel_problem.solve().map_err(LpSolverError)?;
 
-        // 把求解器的内部格式转换成通用的格式
+        // 把求解器的内部格式转换成求解器无关的格式
         let solution = from_clarabel_solution(&recipe_extra, &clarabel_solution);
 
         Ok(solution)

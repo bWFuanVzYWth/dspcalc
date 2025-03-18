@@ -4,7 +4,6 @@ use crate::dsp::{
     building::BuildingType,
     item::{Cargo, Resource, ResourceType},
 };
-
 use super::{Recipe, RecipeFmtInfo};
 
 // TODO 根据采矿等级设置num
