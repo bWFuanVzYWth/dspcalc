@@ -1,5 +1,3 @@
-use dspdb::item::ItemData;
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IndirectResource {
     Power,

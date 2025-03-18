@@ -9,7 +9,7 @@ use dspcalc::{
     },
     error::DspCalError,
 };
-use dspdb::item::{item_name, ItemData};
+use dspdb::item::item_name;
 
 fn in_sec(tick: f64) -> f64 {
     tick / 60.0
@@ -19,7 +19,7 @@ fn in_min(tick: f64) -> f64 {
     tick / 3600.0
 }
 
-pub fn print_recipe(num_scale: f64, recipe: &Recipe, items: &[ItemData]) {
+pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
     match &recipe.info.proliferator_type {
         Some(t) => {
             if t.level >= 1 {
@@ -98,13 +98,13 @@ fn main() -> Result<(), DspCalError> {
         num: 10000.0,
     };
 
-    let need_proliferator_mk3 = Resource {
-        resource_type: ResourceType::Direct(Cargo {
-            item_id: 1143,
-            level: 4,
-        }),
-        num: 10000.0,
-    };
+    // let need_proliferator_mk3 = Resource {
+    //     resource_type: ResourceType::Direct(Cargo {
+    //         item_id: 1143,
+    //         level: 4,
+    //     }),
+    //     num: 10000.0,
+    // };
 
     let raw_recipes = dspdb::recipe::recipes_data();
     let raw_items = dspdb::item::items_data();
@@ -161,7 +161,7 @@ fn main() -> Result<(), DspCalError> {
     // 输出
     let price = solutions.iter().map(|a| a.num).sum::<f64>();
     for solution in solutions {
-        print_recipe(solution.num, &solution.recipe, &raw_items);
+        print_recipe(solution.num, &solution.recipe);
     }
     print!("总成本：{}", price / 3600.0);
 

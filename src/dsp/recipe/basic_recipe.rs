@@ -110,6 +110,8 @@ impl Recipe {
         )
     }
 
+    /// # Errors
+    /// 如果配方的建筑类型未定义则返回错误
     pub fn recipes_accelerate(
         recipes: &mut Vec<Self>,
         recipe_item: &RecipeItem,
@@ -143,9 +145,11 @@ impl Recipe {
         recipe_item
             .items
             .iter()
-            .all(|id| productive_map.get(id).copied().unwrap_or(false))
+            .all(|id| productive_map.get(id).copied().expect("unknown item id"))
     }
 
+    /// # Errors
+    /// 如果配方的建筑类型未定义则返回错误
     pub fn recipes_productive(
         recipes: &mut Vec<Self>,
         recipe_item: &RecipeItem,
@@ -168,6 +172,8 @@ impl Recipe {
         Ok(())
     }
 
+    /// # Errors
+    /// 如果配方的建筑类型未定义则返回错误
     pub fn recipe_vanilla(
         recipes: &mut Vec<Self>,
         recipe_item: &RecipeItem,

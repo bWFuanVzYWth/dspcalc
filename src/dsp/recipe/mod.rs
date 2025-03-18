@@ -43,7 +43,8 @@ pub struct Recipe {
 }
 
 impl Recipe {
-    #[must_use]
+    /// # Errors
+    /// 如果配方的建筑类型未定义则返回错误
     pub fn flatten_recipes(
         basic_recipes: &[RecipeItem],
         items: &[ItemData],
