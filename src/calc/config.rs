@@ -11,5 +11,8 @@ pub fn config_solver(problem: &mut ClarabelProblem) {
         .tol_infeas_rel(f64::EPSILON)
         .static_regularization_constant(f64::EPSILON)
         .dynamic_regularization_eps(f64::EPSILON)
+        .dynamic_regularization_delta(f64::EPSILON)
+        .iterative_refinement_reltol(f64::EPSILON)
+        .iterative_refinement_abstol(f64::EPSILON)
         .max_iter(u32::MAX);
 }
