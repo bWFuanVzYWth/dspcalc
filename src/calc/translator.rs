@@ -2,21 +2,22 @@ use crate::calc;
 use crate::{dsp::recipe::Recipe, error::DspCalError, error::DspCalError::UnknownLpVarId};
 use good_lp::{solvers::clarabel::ClarabelSolution, Solution};
 
+use super::RecipeExtra;
+
 pub fn from_clarabel_solution(
-    recipe_variables: &[good_lp::Variable],
-    all_recipes: &[Recipe],
+    all_recipes: &[RecipeExtra],
     clarabel_solution: &ClarabelSolution,
-) -> Result<Vec<calc::Solution>, DspCalError> {
+) -> Vec<calc::Solution> {
     let mut solutions = Vec::new();
-    for (i, recipe) in all_recipes.iter().enumerate() {
-        let num = clarabel_solution.value(*recipe_variables.get(i).ok_or(UnknownLpVarId(i))?);
+    for recipe in all_recipes {
+        let num = clarabel_solution.value(recipe.variable);
         if num > f64::from(f32::EPSILON) {
             let solution = calc::Solution {
-                recipe: recipe.clone(),
+                recipe: recipe.recipe.clone(),
                 num,
             };
             solutions.push(solution);
         }
     }
-    Ok(solutions)
+    solutions
 }
