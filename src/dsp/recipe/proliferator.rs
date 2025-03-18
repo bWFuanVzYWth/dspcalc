@@ -52,16 +52,15 @@ impl Recipe {
         const STACK: f64 = 4.0;
         const PROLIFERATOR_TIME: f64 = 2.0;
 
+        let proliferator_life = f64::from(proliferator.life(proliferator_level));
+        let base_amount = (f64::from(cargo_level) / f64::from(proliferator.inc_level())) * STACK;
+        let amount = base_amount / proliferator_life;
+
         recipes.push(Self {
             items: {
                 let mut items = vec![
                     Resource::from_item_level(item_data.id, 0, STACK),
-                    Resource::from_item_level(
-                        proliferator.item_id(),
-                        proliferator_level,
-                        f64::from(cargo_level) / f64::from(proliferator.inc_level()) * STACK
-                            / f64::from(proliferator.life(proliferator_level)),
-                    ),
+                    Resource::from_item_level(proliferator.item_id(), proliferator_level, amount),
                 ];
                 items.push(Resource::power(BuildingType::喷涂机.power()));
                 items

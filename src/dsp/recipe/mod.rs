@@ -7,6 +7,8 @@ mod proliferator;
 use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
+use crate::error::DspCalError;
+
 use super::{building::BuildingType, item::Resource};
 
 #[derive(Clone, Debug)]
@@ -46,13 +48,13 @@ impl Recipe {
         basic_recipes: &[RecipeItem],
         items: &[ItemData],
         cocktail: bool,
-    ) -> Vec<Self> {
+    ) -> Result<Vec<Self>, DspCalError> {
         let mut recipes = Vec::new();
         for recipe_item in basic_recipes {
-            Self::recipe_vanilla(&mut recipes, recipe_item);
-            Self::recipes_productive(&mut recipes, recipe_item, items, cocktail);
-            Self::recipes_accelerate(&mut recipes, recipe_item, cocktail);
+            Self::recipe_vanilla(&mut recipes, recipe_item)?;
+            Self::recipes_productive(&mut recipes, recipe_item, items, cocktail)?;
+            Self::recipes_accelerate(&mut recipes, recipe_item, cocktail)?;
         }
-        recipes
+        Ok(recipes)
     }
 }

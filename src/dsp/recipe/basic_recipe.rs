@@ -5,10 +5,13 @@ use strum::IntoEnumIterator;
 use dspdb::item::ItemData;
 use dspdb::recipe::RecipeItem;
 
-use crate::dsp::{
-    building::BuildingType,
-    item::{Cargo, Resource, ResourceType},
-    proliferator::Proliferator,
+use crate::{
+    dsp::{
+        building::BuildingType,
+        item::{Cargo, Resource, ResourceType},
+        proliferator::Proliferator,
+    },
+    error::DspCalError,
 };
 
 use super::{ProliferatorType, Recipe, RecipeFmtInfo};
@@ -21,9 +24,13 @@ impl Recipe {
         modify_time: impl Fn(f64) -> f64,
         power_scale: f64,
         info: RecipeFmtInfo,
-    ) -> Self {
-        let power =
-            Resource::power(BuildingType::from_recipe_item(recipe_item).power() * power_scale);
+    ) -> Result<Self, DspCalError> {
+        let power = Resource::power(
+            BuildingType::from_recipe_item(recipe_item)
+                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?
+                .power()
+                * power_scale,
+        );
         let mut items: Vec<_> = recipe_item
             .items
             .iter()
@@ -39,7 +46,7 @@ impl Recipe {
             .collect();
         items.push(power);
 
-        Self {
+        Ok(Self {
             items,
             results: recipe_item
                 .results
@@ -56,19 +63,22 @@ impl Recipe {
                 .collect(),
             #[allow(clippy::cast_precision_loss)]
             time: modify_time(recipe_item.time_spend as f64)
-                * BuildingType::from_recipe_item(recipe_item).time_scale(),
+                * BuildingType::from_recipe_item(recipe_item)
+                    .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?
+                    .time_scale(),
             info,
-        }
+        })
     }
 
-    fn accelerate(recipe_item: &RecipeItem, level: u8) -> Self {
+    fn accelerate(recipe_item: &RecipeItem, level: u8) -> Result<Self, DspCalError> {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             proliferator_type: Some(ProliferatorType {
                 level,
                 is_speed_up: true,
             }),
-            building_type: BuildingType::from_recipe_item(recipe_item),
+            building_type: BuildingType::from_recipe_item(recipe_item)
+                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?,
         };
         Self::create_recipe(
             recipe_item,
@@ -80,14 +90,15 @@ impl Recipe {
         )
     }
 
-    fn productive(recipe_item: &RecipeItem, level: u8) -> Self {
+    fn productive(recipe_item: &RecipeItem, level: u8) -> Result<Self, DspCalError> {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             proliferator_type: Some(ProliferatorType {
                 level,
                 is_speed_up: false,
             }),
-            building_type: BuildingType::from_recipe_item(recipe_item),
+            building_type: BuildingType::from_recipe_item(recipe_item)
+                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?,
         };
         Self::create_recipe(
             recipe_item,
@@ -99,16 +110,21 @@ impl Recipe {
         )
     }
 
-    pub fn recipes_accelerate(recipes: &mut Vec<Self>, recipe_item: &RecipeItem, cocktail: bool) {
+    pub fn recipes_accelerate(
+        recipes: &mut Vec<Self>,
+        recipe_item: &RecipeItem,
+        cocktail: bool,
+    ) -> Result<(), DspCalError> {
         if cocktail {
             for level in 1..=Proliferator::MAX_INC_LEVEL {
-                recipes.push(Self::accelerate(recipe_item, level));
+                recipes.push(Self::accelerate(recipe_item, level)?);
             }
         } else {
-            Proliferator::iter().for_each(|proliferator| {
-                recipes.push(Self::accelerate(recipe_item, proliferator.inc_level()));
-            });
+            for proliferator in Proliferator::iter() {
+                recipes.push(Self::accelerate(recipe_item, proliferator.inc_level())?);
+            }
         }
+        Ok(())
     }
 
     // 预处理物品增产支持信息
@@ -135,29 +151,35 @@ impl Recipe {
         recipe_item: &RecipeItem,
         items: &[ItemData],
         cocktail: bool,
-    ) {
+    ) -> Result<(), DspCalError> {
         let productive_map = Self::build_productive_map(items);
         if Self::recipe_can_be_productive(recipe_item, &productive_map) {
             if cocktail {
                 for level in 1..=Proliferator::MAX_INC_LEVEL {
-                    recipes.push(Self::productive(recipe_item, level));
+                    recipes.push(Self::productive(recipe_item, level)?);
                 }
             } else {
-                Proliferator::iter().for_each(|proliferator| {
-                    recipes.push(Self::productive(recipe_item, proliferator.inc_level()));
-                });
+                for proliferator in Proliferator::iter() {
+                    recipes.push(Self::productive(recipe_item, proliferator.inc_level())?);
+                }
             }
         }
+
+        Ok(())
     }
 
-    pub fn recipe_vanilla(recipes: &mut Vec<Self>, recipe_item: &RecipeItem) {
+    pub fn recipe_vanilla(
+        recipes: &mut Vec<Self>,
+        recipe_item: &RecipeItem,
+    ) -> Result<(), DspCalError> {
         let info = RecipeFmtInfo {
             name: recipe_item.name.clone(),
             proliferator_type: Some(ProliferatorType {
                 level: 0,
                 is_speed_up: false,
             }),
-            building_type: BuildingType::from_recipe_item(recipe_item),
+            building_type: BuildingType::from_recipe_item(recipe_item)
+                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?,
         };
         recipes.push(Self::create_recipe(
             recipe_item,
@@ -166,6 +188,8 @@ impl Recipe {
             |time| time,
             Proliferator::power(0),
             info,
-        ));
+        )?);
+
+        Ok(())
     }
 }

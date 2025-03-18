@@ -7,6 +7,7 @@ use dspcalc::{
         },
         recipe::Recipe,
     },
+    error::DspCalError,
 };
 use dspdb::item::{item_name, ItemData};
 
@@ -88,7 +89,7 @@ struct Config {
     cocktail: bool,
 }
 
-fn main() {
+fn main() -> Result<(), DspCalError> {
     let need_white_cube = Resource {
         resource_type: ResourceType::Direct(Cargo {
             item_id: 6006,
@@ -120,7 +121,7 @@ fn main() {
     let powers = Recipe::powers();
     let mines = Recipe::mines(&raw_items);
     let photons = Recipe::photons();
-    let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes, &raw_items, config.cocktail);
+    let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes, &raw_items, config.cocktail)?;
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items, config.cocktail);
     let recipes = [
         powers,
@@ -155,7 +156,7 @@ fn main() {
         needs,
         weights,
     };
-    let solutions = problem.solve().unwrap(); // FIXME 消除这个unwarp
+    let solutions = problem.solve()?;
 
     // 输出
     let price = solutions.iter().map(|a| a.num).sum::<f64>();
@@ -163,6 +164,8 @@ fn main() {
         print_recipe(solution.num, &solution.recipe, &raw_items);
     }
     print!("总成本：{}", price / 3600.0);
+
+    Ok(())
 }
 
 // TODO 群友建议

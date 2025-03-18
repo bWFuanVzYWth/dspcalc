@@ -17,16 +17,16 @@ pub enum BuildingType {
 
 impl BuildingType {
     #[must_use]
-    pub fn from_recipe_item(recipe_item: &RecipeItem) -> Self {
+    pub const fn from_recipe_item(recipe_item: &RecipeItem) -> Option<Self> {
         match recipe_item.type_ {
-            1 => Self::熔炉,
-            2 => Self::化工,
-            3 => Self::精炼厂,
-            4 => Self::制造台,
-            5 => Self::对撞机,
-            8 => Self::分馏塔,
-            15 => Self::科研站,
-            _ => panic!("Fatal: unknown building_type: {}", recipe_item.type_),
+            1 => Some(Self::熔炉),
+            2 => Some(Self::化工),
+            3 => Some(Self::精炼厂),
+            4 => Some(Self::制造台),
+            5 => Some(Self::对撞机),
+            8 => Some(Self::分馏塔),
+            15 => Some(Self::科研站),
+            _ => None,
         }
     }
 

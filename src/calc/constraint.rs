@@ -4,7 +4,7 @@ use good_lp::{
 
 use crate::dsp::item::{Resource, ResourceType};
 
-use super::{ProcessedRecipes, RecipeExtra};
+use super::ProcessedRecipes;
 
 pub fn constraint_recipes(
     processed: &ProcessedRecipes,
