@@ -120,11 +120,7 @@ fn main() {
     let powers = Recipe::powers();
     let mines = Recipe::mines(&raw_items);
     let photons = Recipe::photons();
-    let flatten_basic_recipes = Recipe::flatten_recipes(
-        &raw_recipes,
-        &raw_items,
-        config.cocktail,
-    );
+    let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes, &raw_items, config.cocktail);
     let proliferator_recipes = Recipe::proliferator_recipes(&raw_items, config.cocktail);
     let recipes = [
         powers,

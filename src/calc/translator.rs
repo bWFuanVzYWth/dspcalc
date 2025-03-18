@@ -1,5 +1,4 @@
 use crate::calc;
-use crate::{dsp::recipe::Recipe, error::DspCalError, error::DspCalError::UnknownLpVarId};
 use good_lp::{solvers::clarabel::ClarabelSolution, Solution};
 
 use super::RecipeExtra;

@@ -1,15 +1,8 @@
 use good_lp::{
     constraint::ConstraintReference, solvers::clarabel::ClarabelProblem, Expression, SolverModel,
-    Variable,
 };
 
-use crate::{
-    dsp::{
-        item::{Resource, ResourceType},
-        recipe::Recipe,
-    },
-    error::DspCalError,
-};
+use crate::dsp::item::{Resource, ResourceType};
 
 use super::RecipeExtra;
 

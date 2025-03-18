@@ -59,8 +59,7 @@ impl Recipe {
                     Resource::from_item_level(
                         proliferator.item_id(),
                         proliferator_level,
-                        f64::from(cargo_level) / f64::from(proliferator.inc_level())
-                            * STACK
+                        f64::from(cargo_level) / f64::from(proliferator.inc_level()) * STACK
                             / f64::from(proliferator.life(proliferator_level)),
                     ),
                 ];
