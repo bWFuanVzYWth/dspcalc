@@ -1,9 +1,9 @@
 use strum::IntoEnumIterator;
 
-use dspdb::item::ItemData;
 use crate::dsp::{
     building::BuildingType, item::Resource, proliferator::Proliferator, recipe::RecipeFmtInfo,
 };
+use dspdb::item::ItemData;
 
 use super::Recipe;
 

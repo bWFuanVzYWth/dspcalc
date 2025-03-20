@@ -1,5 +1,5 @@
-use crate::dsp::{building::BuildingType, item::Resource, recipe::RecipeFmtInfo};
 use super::Recipe;
+use crate::dsp::{building::BuildingType, item::Resource, recipe::RecipeFmtInfo};
 
 impl Recipe {
     #[must_use]

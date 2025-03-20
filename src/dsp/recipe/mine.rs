@@ -1,10 +1,10 @@
 use dspdb::item::ItemData;
 
+use super::{Recipe, RecipeFmtInfo};
 use crate::dsp::{
     building::BuildingType,
     item::{Cargo, Resource, ResourceType},
 };
-use super::{Recipe, RecipeFmtInfo};
 
 // TODO 根据采矿等级设置num
 // FIXME 耗电量计算不正确
