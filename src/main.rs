@@ -21,26 +21,26 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
         Some(t) => {
             if t.level >= 1 {
                 print!(
-                    "({}_{})\t",
+                    "{}_{},\t",
                     if t.is_speed_up { "加速" } else { "增产" },
                     t.level
                 );
             } else {
-                print!("(无增产)\t");
+                print!("无增产,\t");
             }
         }
-        None => print!("(不适用)\t"),
+        None => print!("不适用,\t"),
     }
 
-    print!("{:.3?}\t", in_min(num_scale));
-    print!("{:.3?}s\t", in_sec(recipe.time));
+    print!("{:.6?},\t", in_min(num_scale));
+    print!("{:.6?},\t", in_sec(recipe.time));
 
     recipe
         .items
         .iter()
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}_{}, ",
+                "{:.6} * {}_{} + ",
                 num_scale * resource.num / recipe.time,
                 item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
                 cargo.level
@@ -63,7 +63,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
         .iter()
         .for_each(|resource| match resource.resource_type {
             ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}_{}, ",
+                "{:.6} * {}_{} + ",
                 num_scale * resource.num / recipe.time,
                 item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
                 cargo.level
@@ -92,7 +92,7 @@ fn main() -> Result<(), DspCalError> {
             item_id: 6006,
             level: 4,
         }),
-        num: 10000.0,
+        num: 1125000.0,
     };
 
     // let need_proliferator_mk3 = Resource {
@@ -112,7 +112,7 @@ fn main() -> Result<(), DspCalError> {
     // TODO 增加真正的原矿化（直接移除相关的公式）
 
     // 设置
-    let config = Config { cocktail: true };
+    let config = Config { cocktail: false };
 
     // 生成所有的公式
     let powers = Recipe::powers();

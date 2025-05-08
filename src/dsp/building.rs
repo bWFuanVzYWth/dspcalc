@@ -80,7 +80,7 @@ impl BuildingType {
             Self::熔炉 | Self::化工 | Self::精炼厂 | Self::制造台 | Self::对撞机 | Self::小太阳 => {
                 0.0369
             }
-            Self::分馏塔 => 1.0,
+            Self::分馏塔 => 1.0, // FIXME 瞎填的
             Self::科研站 => 0.0197,
             Self::矿机 => 0.0,
             Self::喷涂机 => 0.0332,
