@@ -20,3 +20,4 @@
 pub mod calc;
 pub mod dsp;
 pub mod error;
+pub mod unit_convert;

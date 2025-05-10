@@ -4,17 +4,9 @@ use dspcalc::{
         item::{Cargo, Resource, ResourceType},
         recipe::Recipe,
     },
-    error::DspCalError,
+    error::DspCalError, unit_convert::{in_min, in_sec},
 };
 use dspdb::item::item_name;
-
-fn in_sec(tick: f64) -> f64 {
-    tick / 60.0
-}
-
-fn in_min(tick: f64) -> f64 {
-    tick / 3600.0
-}
 
 pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
     match &recipe.info.proliferator_type {
@@ -112,7 +104,7 @@ fn main() -> Result<(), DspCalError> {
     // TODO 增加真正的原矿化（直接移除相关的公式）
 
     // 设置
-    let config = Config { cocktail: false };
+    let config = Config { cocktail: true };
 
     // 生成所有的公式
     let powers = Recipe::powers();
