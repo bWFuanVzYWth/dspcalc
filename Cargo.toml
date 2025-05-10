@@ -22,8 +22,8 @@ thiserror = "2.0.12"
 
 [profile.release]
 debug = true
-codegen-units = 1
-lto = "fat"
+# codegen-units = 1
+# lto = "fat"
 rustflags = [
     "-C",
     "target-cpu=native",

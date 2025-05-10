@@ -4,7 +4,8 @@ use dspcalc::{
         item::{Cargo, Resource, ResourceType},
         recipe::Recipe,
     },
-    error::DspCalError, unit_convert::{in_min, in_sec},
+    error::DspCalError,
+    unit_convert::{tick_from_min, tick_from_sec},
 };
 use dspdb::item::item_name;
 
@@ -24,8 +25,8 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
         None => print!("不适用,\t"),
     }
 
-    print!("{:.6?},\t", in_min(num_scale));
-    print!("{:.6?},\t", in_sec(recipe.time));
+    print!("{:.6?},\t", tick_from_min(num_scale));
+    print!("{:.6?},\t", tick_from_sec(recipe.time));
 
     recipe
         .items
@@ -41,7 +42,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
                 dspcalc::dsp::item::IndirectResource::Power => {
                     print!(
                         "{:.6} MW",
-                        in_sec(num_scale * resource.num / recipe.time / 1000.0)
+                        tick_from_sec(num_scale * resource.num / recipe.time / 1000.0)
                     );
                 }
                 dspcalc::dsp::item::IndirectResource::Area => todo!(),
@@ -64,7 +65,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
                 dspcalc::dsp::item::IndirectResource::Power => {
                     print!(
                         "{:.6} MW",
-                        in_sec(num_scale * resource.num / recipe.time / 1000.0)
+                        tick_from_sec(num_scale * resource.num / recipe.time / 1000.0)
                     );
                 }
                 dspcalc::dsp::item::IndirectResource::Area => todo!(),
@@ -84,7 +85,7 @@ fn main() -> Result<(), DspCalError> {
             item_id: 6006,
             level: 4,
         }),
-        num: 1125000.0,
+        num: tick_from_min(1125000.0),
     };
 
     // let need_proliferator_mk3 = Resource {
