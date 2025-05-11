@@ -5,6 +5,8 @@ use good_lp::{
 use super::ProcessedRecipes;
 use crate::dsp::item::{Resource, ResourceType};
 
+// TODO 合并 constraint_recipes 和 constraint_needs 逻辑
+
 pub fn constraint_recipes(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,

@@ -5,7 +5,7 @@ use dspcalc::{
         recipe::Recipe,
     },
     error::DspCalError,
-    unit_convert::{tick_from_min, tick_from_sec},
+    unit_convert::{min_from_tick, sec_from_tick},
 };
 use dspdb::item::item_name;
 
@@ -25,8 +25,8 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
         None => print!("不适用,\t"),
     }
 
-    print!("{:.6?},\t", tick_from_min(num_scale));
-    print!("{:.6?},\t", tick_from_sec(recipe.time));
+    print!("{:.6?},\t", num_scale);
+    print!("{:.6?},\t", recipe.time);
 
     recipe
         .items
@@ -42,7 +42,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
                 dspcalc::dsp::item::IndirectResource::Power => {
                     print!(
                         "{:.6} MW",
-                        tick_from_sec(num_scale * resource.num / recipe.time / 1000.0)
+                        sec_from_tick(num_scale * resource.num / recipe.time)
                     );
                 }
                 dspcalc::dsp::item::IndirectResource::Area => todo!(),
@@ -65,7 +65,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
                 dspcalc::dsp::item::IndirectResource::Power => {
                     print!(
                         "{:.6} MW",
-                        tick_from_sec(num_scale * resource.num / recipe.time / 1000.0)
+                        sec_from_tick(num_scale * resource.num / recipe.time)
                     );
                 }
                 dspcalc::dsp::item::IndirectResource::Area => todo!(),
@@ -85,7 +85,7 @@ fn main() -> Result<(), DspCalError> {
             item_id: 6006,
             level: 4,
         }),
-        num: tick_from_min(1125000.0),
+        num: min_from_tick(1125000.0),
     };
 
     // let need_proliferator_mk3 = Resource {
@@ -154,7 +154,7 @@ fn main() -> Result<(), DspCalError> {
     for solution in solutions {
         print_recipe(solution.num, &solution.recipe);
     }
-    print!("总成本：{}", price / 3600.0);
+    print!("总成本：{price}");
 
     Ok(())
 }

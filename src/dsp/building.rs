@@ -1,5 +1,7 @@
 use dspdb::recipe::RecipeItem;
 
+use crate::unit_convert::sec_from_tick;
+
 #[derive(Clone, Debug)]
 pub enum BuildingType {
     熔炉 = 1,
@@ -39,20 +41,21 @@ impl BuildingType {
         }
     }
 
+    // MJ / tick
     #[must_use]
     pub const fn power(&self) -> f64 {
         match self {
-            Self::熔炉 => 2880.0,
-            Self::化工 => 2160.0,
-            Self::精炼厂 => 960.0,
-            Self::制造台 => 2700.0,
-            Self::对撞机 => 12000.0,
-            Self::分馏塔 => 17800.0, // FIXME 这个公式本来就是错误的。只是为了规范而保留，任意时候都不应该使用
-            Self::科研站 => 1920.0,
-            Self::矿机 => 25400.0, // FIXME 检查小数点后的数字
-            Self::喷涂机 => 90.0,
-            Self::小太阳 => 288_000.0,
-            Self::锅盖 => 0.0,
+            Self::熔炉 => sec_from_tick(2.88),
+            Self::化工 => sec_from_tick(2.16),
+            Self::精炼厂 => sec_from_tick(0.96),
+            Self::制造台 => sec_from_tick(2.7),
+            Self::对撞机 => sec_from_tick(12.0),
+            Self::分馏塔 => sec_from_tick(17.8), // FIXME 这个公式本来就是错误的。只是为了规范而保留，任意时候都不应该使用
+            Self::科研站 => sec_from_tick(1.92),
+            Self::矿机 => sec_from_tick(25.4), // FIXME 检查小数点后的数字
+            Self::喷涂机 => sec_from_tick(0.09),
+            Self::小太阳 => sec_from_tick(288.0),
+            Self::锅盖 => sec_from_tick(0.0),
         }
     }
 
