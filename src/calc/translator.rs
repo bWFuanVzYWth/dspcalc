@@ -7,16 +7,19 @@ pub fn from_clarabel_solution(
     recipes: &[RecipeBinding],
     clarabel_solution: &ClarabelSolution,
 ) -> Vec<calc::Solution> {
-    let mut solutions = Vec::new();
-    for recipe in recipes {
-        let num = clarabel_solution.value(recipe.variable);
-        if num > f64::from(f32::EPSILON) {
-            let solution = calc::Solution {
-                recipe: recipe.recipe.clone(),
-                num,
-            };
-            solutions.push(solution);
-        }
-    }
-    solutions
+    const THRESHOLD: f64 = f32::EPSILON as f64;
+    recipes
+        .iter()
+        .filter_map(|recipe| {
+            let num = clarabel_solution.value(recipe.variable);
+            if num > THRESHOLD {
+                Some(calc::Solution {
+                    recipe: recipe.recipe.clone(),
+                    num,
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
 }
