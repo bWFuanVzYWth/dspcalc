@@ -5,23 +5,20 @@ use good_lp::{
 use super::ProcessedRecipes;
 use crate::dsp::item::{Resource, ResourceType};
 
-// TODO 合并 constraint_recipes 和 constraint_needs 逻辑
 
 pub fn constraint_recipes(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
     productions: &[ResourceType],
 ) -> Vec<ConstraintReference> {
-    productions
+    let needs = productions
         .iter()
-        .map(|&prod| {
-            let resource = Resource {
-                resource_type: prod,
-                num: 0.0,
-            };
-            create_constraint(processed, problem, resource)
+        .map(|production| Resource {
+            resource_type: *production,
+            num: 0.0,
         })
-        .collect()
+        .collect::<Vec<_>>();
+    constraint_needs(processed, problem, &needs)
 }
 
 pub fn constraint_needs(
