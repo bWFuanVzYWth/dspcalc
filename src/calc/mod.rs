@@ -31,35 +31,26 @@ pub struct Solution {
     pub num: f64,
 }
 
-fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
-    recipes
-        .iter()
-        .flat_map(|r| r.results.iter().map(|r| r.resource_type))
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect()
-}
-
-pub struct RecipeExtra {
+/// 绑定公式、线性规划求解器变量、权重
+pub struct RecipeBinding {
     pub recipe: Recipe,
     pub variable: Variable,
     pub weight: f64,
 }
 
 struct ProcessedRecipes<'a> {
-    consumes: HashMap<ResourceType, Vec<(&'a RecipeExtra, f64)>>,
-    produces: HashMap<ResourceType, Vec<(&'a RecipeExtra, f64)>>,
+    consumes: HashMap<ResourceType, Vec<(&'a RecipeBinding, f64)>>,
+    produces: HashMap<ResourceType, Vec<(&'a RecipeBinding, f64)>>,
 }
 
 impl<'a> ProcessedRecipes<'a> {
-    fn new(recipes: &'a [RecipeExtra]) -> Self {
+    fn new(recipes: &'a [RecipeBinding]) -> Self {
         let mut consumes: HashMap<ResourceType, Vec<_>> = HashMap::new();
         let mut produces: HashMap<ResourceType, Vec<_>> = HashMap::new();
         for recipe in recipes {
-            let time = recipe.recipe.time;
             // 处理消耗项
             for item in &recipe.recipe.items {
-                let rate = item.num / time;
+                let rate = item.num / recipe.recipe.time;
                 consumes
                     .entry(item.resource_type)
                     .or_default()
@@ -67,7 +58,7 @@ impl<'a> ProcessedRecipes<'a> {
             }
             // 处理生产项
             for result in &recipe.recipe.results {
-                let rate = result.num / time;
+                let rate = result.num / recipe.recipe.time;
                 produces
                     .entry(result.resource_type)
                     .or_default()
@@ -79,8 +70,12 @@ impl<'a> ProcessedRecipes<'a> {
 }
 
 impl Problem {
+    /// 求解的主逻辑
+    ///
     /// # Errors
-    /// 如果问题求解失败，返回错误
+    /// 有两种情况会返回错误：
+    /// - 输入的需求列表与权重列表长度不一致
+    /// - 求解失败
     pub fn solve(&self) -> Result<Vec<Solution>, DspCalError> {
         // 验证权重数量
         if self.recipes.len() != self.weights.len() {
@@ -90,21 +85,12 @@ impl Problem {
             ));
         }
 
-        // 找出所有公式产物，所有的产物都不能无中生有，由此可以构建约束
-        let productions = find_all_production(&self.recipes);
+        // 找出所有公式中出现过的产物
+        let productions = Self::find_all_production(&self.recipes);
 
         // 绑定公式、公式权重和线性规划变量，变量即建筑数量
         let mut model = variables!();
-        let recipe_extra = self
-            .recipes
-            .iter()
-            .zip(self.weights.iter())
-            .map(|(recipe, weight)| RecipeExtra {
-                recipe: recipe.clone(),
-                variable: model.add(variable().min(0.0)),
-                weight: *weight,
-            })
-            .collect::<Vec<_>>();
+        let recipe_extra = self.bind(&mut model);
 
         // 定义优化目标，暂时只支持权重表的形式
         let objective = minimize_by_weight(&recipe_extra);
@@ -124,12 +110,35 @@ impl Problem {
         // 根据需求列表生成并设置相应的约束
         let _constraint_need = constraint_needs(&processed, &mut clarabel_problem, &self.needs);
 
-        // 求解
+        // 调用clarabel进行求解
         let clarabel_solution = clarabel_problem.solve().map_err(LpSolverError)?;
 
         // 把求解器的内部格式转换成求解器无关的格式
         let solution = from_clarabel_solution(&recipe_extra, &clarabel_solution);
 
         Ok(solution)
+    }
+
+    // 绑定公式、公式权重和线性规划变量，变量即建筑数量
+    fn bind(&self, model: &mut good_lp::ProblemVariables) -> Vec<RecipeBinding> {
+        self.recipes
+            .iter()
+            .zip(self.weights.iter())
+            .map(|(recipe, weight)| RecipeBinding {
+                recipe: recipe.clone(),
+                variable: model.add(variable().min(0.0)),
+                weight: *weight,
+            })
+            .collect::<Vec<_>>()
+    }
+
+    // 找出所有公式中出现过的产物
+    fn find_all_production(recipes: &[Recipe]) -> Vec<ResourceType> {
+        recipes
+            .iter()
+            .flat_map(|r| r.results.iter().map(|r| r.resource_type))
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect()
     }
 }

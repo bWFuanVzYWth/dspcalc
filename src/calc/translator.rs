@@ -1,10 +1,10 @@
 use crate::calc;
 use good_lp::{solvers::clarabel::ClarabelSolution, Solution};
 
-use super::RecipeExtra;
+use super::RecipeBinding;
 
 pub fn from_clarabel_solution(
-    recipes: &[RecipeExtra],
+    recipes: &[RecipeBinding],
     clarabel_solution: &ClarabelSolution,
 ) -> Vec<calc::Solution> {
     let mut solutions = Vec::new();
