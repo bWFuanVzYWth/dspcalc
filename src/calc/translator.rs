@@ -3,6 +3,7 @@ use good_lp::{solvers::clarabel::ClarabelSolution, Solution};
 
 use super::RecipeBinding;
 
+// 根据阈值过滤解，并把解转换成求解器无关的格式
 pub fn from_clarabel_solution(
     recipes: &[RecipeBinding],
     clarabel_solution: &ClarabelSolution,
