@@ -1,8 +1,6 @@
 use good_lp::solvers::clarabel::ClarabelProblem;
 
 /// 求解精度配置
-///
-/// 希望逼近f64的极限精度，通常不应该修改
 pub fn config_solver(problem: &mut ClarabelProblem) {
     problem
         .settings()

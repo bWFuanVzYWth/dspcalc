@@ -5,13 +5,15 @@ use good_lp::{
 use super::ProcessedRecipes;
 use crate::dsp::item::{Resource, ResourceType};
 
-
+/// 创建所有公式约束
+///
+/// 本质是把公式约束视为需求量为0的需求约束
 pub fn constraint_recipes(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
-    productions: &[ResourceType],
+    production_types: &[ResourceType],
 ) -> Vec<ConstraintReference> {
-    let needs = productions
+    let needs = production_types
         .iter()
         .map(|production| Resource {
             resource_type: *production,
@@ -21,6 +23,9 @@ pub fn constraint_recipes(
     constraint_needs(processed, problem, &needs)
 }
 
+/// 创建所有需求约束
+///
+/// 对需求列表中的每一项资源创建一个需求约束，返回相应的约束引用列表
 pub fn constraint_needs(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
@@ -32,12 +37,16 @@ pub fn constraint_needs(
         .collect()
 }
 
+/// 创建一个需求约束
+///
+/// 对所有出现的配方，产出量**总和** - 消耗量**总和** >= 需求量
 fn create_constraint(
     processed: &ProcessedRecipes,
     problem: &mut ClarabelProblem,
     need: Resource,
 ) -> ConstraintReference {
     let (consumes, produces) = (
+        // 当 get() 返回 None 时，sum() 会默认为 0
         processed.consumes.get(&need.resource_type),
         processed.produces.get(&need.resource_type),
     );
