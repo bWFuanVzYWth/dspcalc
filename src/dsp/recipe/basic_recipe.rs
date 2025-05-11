@@ -24,12 +24,8 @@ impl Recipe {
         power_scale: f64,
         info: RecipeFmtInfo,
     ) -> Result<Self, DspCalError> {
-        let power = Resource::power(
-            BuildingType::from_recipe_item(recipe_item)
-                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?
-                .power()
-                * power_scale,
-        );
+        let power = Resource::power(get_building_type(recipe_item)?.power() * power_scale);
+
         let mut items: Vec<_> = recipe_item
             .items
             .iter()
@@ -45,26 +41,28 @@ impl Recipe {
             .collect();
         items.push(power);
 
+        let results = recipe_item
+            .results
+            .iter()
+            .zip(recipe_item.result_counts.iter())
+            .map(|(res, count)| Resource {
+                resource_type: ResourceType::Direct(Cargo {
+                    item_id: *res,
+                    level: 0,
+                }),
+                #[allow(clippy::cast_precision_loss)]
+                num: modify_result_num(*count as f64),
+            })
+            .collect();
+
+        #[allow(clippy::cast_precision_loss)]
+        let time = modify_time(recipe_item.time_spend as f64)
+            * get_building_type(recipe_item)?.time_scale();
+
         Ok(Self {
             items,
-            results: recipe_item
-                .results
-                .iter()
-                .zip(recipe_item.result_counts.iter())
-                .map(|(res, count)| Resource {
-                    resource_type: ResourceType::Direct(Cargo {
-                        item_id: *res,
-                        level: 0,
-                    }),
-                    #[allow(clippy::cast_precision_loss)]
-                    num: modify_result_num(*count as f64),
-                })
-                .collect(),
-            #[allow(clippy::cast_precision_loss)]
-            time: modify_time(recipe_item.time_spend as f64)
-                * BuildingType::from_recipe_item(recipe_item)
-                    .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?
-                    .time_scale(),
+            results,
+            time,
             info,
         })
     }
@@ -76,8 +74,7 @@ impl Recipe {
                 level: items_level,
                 is_speed_up: true,
             }),
-            building_type: BuildingType::from_recipe_item(recipe_item)
-                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?,
+            building_type: get_building_type(recipe_item)?,
         };
         Self::create_recipe(
             recipe_item,
@@ -96,8 +93,7 @@ impl Recipe {
                 level: items_level,
                 is_speed_up: false,
             }),
-            building_type: BuildingType::from_recipe_item(recipe_item)
-                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?,
+            building_type: get_building_type(recipe_item)?,
         };
         Self::create_recipe(
             recipe_item,
@@ -184,8 +180,7 @@ impl Recipe {
                 level: 0,
                 is_speed_up: false,
             }),
-            building_type: BuildingType::from_recipe_item(recipe_item)
-                .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))?,
+            building_type: get_building_type(recipe_item)?,
         };
         recipes.push(Self::create_recipe(
             recipe_item,
@@ -198,4 +193,9 @@ impl Recipe {
 
         Ok(())
     }
+}
+
+fn get_building_type(recipe_item: &RecipeItem) -> Result<BuildingType, DspCalError> {
+    BuildingType::from_recipe_item(recipe_item)
+        .ok_or(DspCalError::UnknownBuildingType(recipe_item.type_))
 }

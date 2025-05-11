@@ -108,7 +108,7 @@ impl Problem {
         let _ref_constraint = constraint_recipes(&processed, &mut clarabel_problem, &productions);
 
         // 根据需求列表生成并设置相应的约束
-        let _constraint_need = constraint_needs(&processed, &mut clarabel_problem, &self.needs);
+        let _ref_constraint_need = constraint_needs(&processed, &mut clarabel_problem, &self.needs);
 
         // 调用clarabel进行求解
         let clarabel_solution = clarabel_problem.solve().map_err(LpSolverError)?;
