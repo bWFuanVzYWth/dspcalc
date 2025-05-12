@@ -7,7 +7,11 @@ use dspdb::recipe::RecipeItem;
 
 use super::{ProliferatorType, Recipe, RecipeFmtInfo};
 use crate::{
-    dsp::{building::BuildingType, item::Resource, proliferator::Proliferator},
+    dsp::{
+        building::BuildingType,
+        item::{Cargo, Resource, ResourceType},
+        proliferator::Proliferator,
+    },
     error::DspCalError,
 };
 
@@ -20,20 +24,34 @@ impl Recipe {
         power_scale: f64,
         info: RecipeFmtInfo,
     ) -> Result<Self, DspCalError> {
-        let items = recipe_item
+        let power = Resource::power(get_building_type(recipe_item)?.power() * power_scale);
+
+        let items: Vec<_> = recipe_item
             .items
             .iter()
             .zip(recipe_item.item_counts.iter())
-            .map(|(&item, &count)| Resource::from_item_level(item, items_level, count as f64))
-            .chain(std::iter::once(get_power(recipe_item, power_scale)?))
-            .collect::<Vec<_>>();
+            .map(|(item, count)| Resource {
+                resource_type: ResourceType::Direct(Cargo {
+                    item_id: *item,
+                    level: items_level,
+                }),
+                #[allow(clippy::cast_precision_loss)]
+                num: *count as f64,
+            })
+            .chain(std::iter::once(power))
+            .collect();
 
         let results = recipe_item
             .results
             .iter()
             .zip(recipe_item.result_counts.iter())
-            .map(|(&result, &count)| {
-                Resource::from_item_level(result, 0, modify_result_num(count as f64))
+            .map(|(res, count)| Resource {
+                resource_type: ResourceType::Direct(Cargo {
+                    item_id: *res,
+                    level: 0,
+                }),
+                #[allow(clippy::cast_precision_loss)]
+                num: modify_result_num(*count as f64),
             })
             .collect();
 
@@ -114,16 +132,21 @@ impl Recipe {
     fn recipe_can_be_productive(
         recipe_item: &RecipeItem,
         productive_map: &HashMap<i16, bool>,
-    ) -> bool {
+    ) -> Result<bool, DspCalError> {
         if recipe_item.non_productive {
-            return false;
+            return Ok(false);
         }
-        recipe_item.items.iter().all(|id| {
-            productive_map
-                .get(id)
-                .copied()
-                .expect("fatal error: unknown item id.")
-        })
+        let mut can_be_productive = true;
+        for item_id in &recipe_item.items {
+            if !*productive_map
+                .get(item_id)
+                .ok_or(DspCalError::UnknownItemId(*item_id))?
+            {
+                can_be_productive = false;
+                break;
+            }
+        }
+        Ok(can_be_productive)
     }
 
     /// # Errors
@@ -135,7 +158,7 @@ impl Recipe {
         cocktail: bool,
     ) -> Result<(), DspCalError> {
         let productive_map = Self::build_productive_map(items);
-        if Self::recipe_can_be_productive(recipe_item, &productive_map) {
+        if Self::recipe_can_be_productive(recipe_item, &productive_map)? {
             if cocktail {
                 for items_level in 1..=Proliferator::MAX_INC_LEVEL {
                     recipes.push(Self::productive(recipe_item, items_level)?);
@@ -175,12 +198,6 @@ impl Recipe {
 
         Ok(())
     }
-}
-
-fn get_power(recipe_item: &RecipeItem, power_scale: f64) -> Result<Resource, DspCalError> {
-    Ok(Resource::power(
-        get_building_type(recipe_item)?.power() * power_scale,
-    ))
 }
 
 fn get_building_type(recipe_item: &RecipeItem) -> Result<BuildingType, DspCalError> {

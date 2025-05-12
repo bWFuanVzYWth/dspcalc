@@ -1,7 +1,7 @@
 use dspcalc::{
     calc::Problem,
     dsp::{
-        item::{Cargo, Resource, ResourceType},
+        item::{Resource, ResourceType},
         recipe::Recipe,
     },
     error::DspCalError,
@@ -25,7 +25,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
         None => print!("不适用,\t"),
     }
 
-    print!("{:.6?},\t", num_scale);
+    print!("{num_scale:.6?},\t");
     print!("{:.6?},\t", recipe.time);
 
     recipe

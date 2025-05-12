@@ -8,4 +8,6 @@ pub enum DspCalError {
     UnknownBuildingType(i64),
     #[error("lp solver error: {0}")]
     LpSolverError(good_lp::ResolutionError),
+    #[error("unknown item id: {0}")]
+    UnknownItemId(i16),
 }
