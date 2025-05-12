@@ -20,16 +20,20 @@ impl Recipe {
         power_scale: f64,
         info: RecipeFmtInfo,
     ) -> Result<Self, DspCalError> {
-        let power = Resource::power(get_building_type(recipe_item)?.power() * power_scale);
+        // 确实存在i64转f64丢失精度的风险，但是几乎不可能发生，除非出现了非常魔怔的数值，通常是无损的
 
-        // 这里确实存在count转换成f64丢失精度的问题，虽然几乎没有可能发生，除非count是非常离谱的数值
+        let time = modify_time(recipe_item.time_spend as f64)
+            * get_building_type(recipe_item)?.time_scale();
+
+        let energy = Resource::energy(get_building_type(recipe_item)?.power() * power_scale * time);
+
 
         let items: Vec<_> = recipe_item
             .items
             .iter()
             .zip(recipe_item.item_counts.iter())
             .map(|(item, count)| Resource::from_item_level(*item, items_level, *count as f64))
-            .chain(std::iter::once(power))
+            .chain(std::iter::once(energy))
             .collect();
 
         let results = recipe_item
@@ -40,10 +44,6 @@ impl Recipe {
                 Resource::from_item_level(*result, 0, modify_result_num(*count as f64))
             })
             .collect();
-
-        #[allow(clippy::cast_precision_loss)]
-        let time = modify_time(recipe_item.time_spend as f64)
-            * get_building_type(recipe_item)?.time_scale();
 
         Ok(Self {
             items,

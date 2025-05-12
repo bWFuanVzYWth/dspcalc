@@ -1,6 +1,6 @@
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IndirectResource {
-    Power,
+    Energy,
     Area,
 }
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -39,9 +39,9 @@ impl Resource {
     }
 
     #[must_use]
-    pub const fn power(num: f64) -> Self {
+    pub const fn energy(num: f64) -> Self {
         Self {
-            resource_type: ResourceType::Indirect(IndirectResource::Power),
+            resource_type: ResourceType::Indirect(IndirectResource::Energy),
             num,
         }
     }

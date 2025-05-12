@@ -13,7 +13,7 @@ impl Recipe {
             let is_mine = |test_item: &ItemData| !test_item.mining_from.is_empty();
             if is_mine(item) {
                 let tmp = Self {
-                    items: vec![Resource::power(BuildingType::矿机.power())],
+                    items: vec![Resource::energy(BuildingType::矿机.power())],
                     results: vec![Resource::from_item_level(item.id, 0, 9.0 * 4.0)],
                     time: 1.0,
                     info: RecipeFmtInfo {

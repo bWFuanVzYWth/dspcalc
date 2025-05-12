@@ -62,7 +62,7 @@ fn format_resources(num_scale: f64, recipe: &Recipe, resource: &Resource) -> Str
             cargo.level
         ),
         ResourceType::Indirect(indirect_resource) => match indirect_resource {
-            dspcalc::dsp::item::IndirectResource::Power => {
+            dspcalc::dsp::item::IndirectResource::Energy => {
                 format!(
                     "{:.6} MW",
                     tick_from_sec(num_scale * resource.num / recipe.time)

@@ -61,7 +61,9 @@ impl Recipe {
                     Resource::from_item_level(item_data.id, 0, STACK),
                     Resource::from_item_level(proliferator.item_id(), proliferator_level, amount),
                 ];
-                items.push(Resource::power(BuildingType::喷涂机.power()));
+                items.push(Resource::energy(
+                    BuildingType::喷涂机.power() * PROLIFERATOR_TIME,
+                ));
                 items
             },
             results: vec![Resource::from_item_level(item_data.id, cargo_level, STACK)],
