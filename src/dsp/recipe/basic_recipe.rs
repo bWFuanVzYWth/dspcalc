@@ -133,20 +133,23 @@ impl Recipe {
         recipe_item: &RecipeItem,
         productive_map: &HashMap<i16, bool>,
     ) -> Result<bool, DspCalError> {
+        // 如果配方标记了不可增产，返回 false
         if recipe_item.non_productive {
             return Ok(false);
         }
-        let mut can_be_productive = true;
+
+        // 如果配方中存在某个原料标记了不可增产，返回 false
         for item_id in &recipe_item.items {
             if !*productive_map
                 .get(item_id)
                 .ok_or(DspCalError::UnknownItemId(*item_id))?
             {
-                can_be_productive = false;
-                break;
+                return Ok(false);
             }
         }
-        Ok(can_be_productive)
+
+        // 剩下的都是可增产
+        Ok(true)
     }
 
     /// # Errors
