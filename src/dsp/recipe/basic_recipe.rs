@@ -27,7 +27,6 @@ impl Recipe {
 
         let energy = Resource::energy(get_building_type(recipe_item)?.power() * power_scale * time);
 
-
         let items: Vec<_> = recipe_item
             .items
             .iter()
