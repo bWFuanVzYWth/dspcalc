@@ -124,10 +124,10 @@ impl Problem {
         self.recipes
             .iter()
             .zip(self.weights.iter())
-            .map(|(recipe, weight)| RecipeBinding {
+            .map(|(recipe, &weight)| RecipeBinding {
                 recipe: recipe.clone(),
                 variable: model.add(variable().min(0.0)),
-                weight: *weight,
+                weight,
             })
             .collect::<Vec<_>>()
     }

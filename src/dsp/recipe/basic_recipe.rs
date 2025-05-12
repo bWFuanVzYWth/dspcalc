@@ -7,11 +7,7 @@ use dspdb::recipe::RecipeItem;
 
 use super::{ProliferatorType, Recipe, RecipeFmtInfo};
 use crate::{
-    dsp::{
-        building::BuildingType,
-        item::{Cargo, Resource, ResourceType},
-        proliferator::Proliferator,
-    },
+    dsp::{building::BuildingType, item::Resource, proliferator::Proliferator},
     error::DspCalError,
 };
 
@@ -24,34 +20,20 @@ impl Recipe {
         power_scale: f64,
         info: RecipeFmtInfo,
     ) -> Result<Self, DspCalError> {
-        let power = Resource::power(get_building_type(recipe_item)?.power() * power_scale);
-
-        let mut items: Vec<_> = recipe_item
+        let items = recipe_item
             .items
             .iter()
             .zip(recipe_item.item_counts.iter())
-            .map(|(item, count)| Resource {
-                resource_type: ResourceType::Direct(Cargo {
-                    item_id: *item,
-                    level: items_level,
-                }),
-                #[allow(clippy::cast_precision_loss)]
-                num: *count as f64,
-            })
-            .collect();
-        items.push(power);
+            .map(|(&item, &count)| Resource::from_item_level(item, items_level, count as f64))
+            .chain(std::iter::once(get_power(recipe_item, power_scale)?))
+            .collect::<Vec<_>>();
 
         let results = recipe_item
             .results
             .iter()
             .zip(recipe_item.result_counts.iter())
-            .map(|(res, count)| Resource {
-                resource_type: ResourceType::Direct(Cargo {
-                    item_id: *res,
-                    level: 0,
-                }),
-                #[allow(clippy::cast_precision_loss)]
-                num: modify_result_num(*count as f64),
+            .map(|(&result, &count)| {
+                Resource::from_item_level(result, 0, modify_result_num(count as f64))
             })
             .collect();
 
@@ -193,6 +175,12 @@ impl Recipe {
 
         Ok(())
     }
+}
+
+fn get_power(recipe_item: &RecipeItem, power_scale: f64) -> Result<Resource, DspCalError> {
+    Ok(Resource::power(
+        get_building_type(recipe_item)?.power() * power_scale,
+    ))
 }
 
 fn get_building_type(recipe_item: &RecipeItem) -> Result<BuildingType, DspCalError> {

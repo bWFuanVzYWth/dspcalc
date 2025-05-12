@@ -15,8 +15,8 @@ pub fn constraint_recipes(
 ) -> Vec<ConstraintReference> {
     let needs = production_types
         .iter()
-        .map(|production| Resource {
-            resource_type: *production,
+        .map(|&production| Resource {
+            resource_type: production,
             num: 0.0,
         })
         .collect::<Vec<_>>();

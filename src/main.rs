@@ -80,21 +80,8 @@ struct Config {
 }
 
 fn main() -> Result<(), DspCalError> {
-    let need_white_cube = Resource {
-        resource_type: ResourceType::Direct(Cargo {
-            item_id: 6006,
-            level: 4,
-        }),
-        num: min_from_tick(1125000.0),
-    };
-
-    // let need_proliferator_mk3 = Resource {
-    //     resource_type: ResourceType::Direct(Cargo {
-    //         item_id: 1143,
-    //         level: 4,
-    //     }),
-    //     num: 10000.0,
-    // };
+    let need_white_cube = Resource::from_item_level(6006, 4, min_from_tick(1125000.0));
+    // let need_proliferator_mk3 = from_item_level(1143, 4, min_from_tick(10000.0));
 
     let raw_recipes = dspdb::recipe::recipes_data();
     let raw_items = dspdb::item::items_data();
