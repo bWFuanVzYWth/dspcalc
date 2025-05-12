@@ -5,74 +5,72 @@ use dspcalc::{
         recipe::Recipe,
     },
     error::DspCalError,
-    unit_convert::{min_from_tick, sec_from_tick},
+    unit_convert::{min_from_tick, sec_from_tick, tick_from_min, tick_from_sec},
 };
 use dspdb::item::item_name;
 
-pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
-    match &recipe.info.proliferator_type {
+fn print_recipes(solutions: Vec<dspcalc::calc::Solution>) {
+    let recipes_output = solutions
+        .iter()
+        .map(|solution| format_recipe(solution.num, &solution.recipe))
+        .collect::<Vec<_>>()
+        .join("\n");
+    println!("增产决策,建筑数量,公式时长,输入输出\n{recipes_output}");
+}
+
+pub fn format_recipe(num_scale: f64, recipe: &Recipe) -> String {
+    let decision = match &recipe.info.proliferator_type {
         Some(t) => {
             if t.level >= 1 {
-                print!(
-                    "{}_{},\t",
+                format!(
+                    "{}_{}",
                     if t.is_speed_up { "加速" } else { "增产" },
                     t.level
-                );
+                )
             } else {
-                print!("无增产,\t");
+                "无增产".to_string()
             }
         }
-        None => print!("不适用,\t"),
-    }
+        None => "不适用".to_string(),
+    };
 
-    print!("{num_scale:.6?},\t");
-    print!("{:.6?},\t", recipe.time);
+    let recipe_time = sec_from_tick(recipe.time);
 
-    recipe
+    let items_string = recipe
         .items
         .iter()
-        .for_each(|resource| match resource.resource_type {
-            ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}_{} + ",
-                num_scale * resource.num / recipe.time,
-                item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
-                cargo.level
-            ),
-            ResourceType::Indirect(indirect_resource) => match indirect_resource {
-                dspcalc::dsp::item::IndirectResource::Power => {
-                    print!(
-                        "{:.6} MW",
-                        sec_from_tick(num_scale * resource.num / recipe.time)
-                    );
-                }
-                dspcalc::dsp::item::IndirectResource::Area => todo!(),
-            },
-        });
+        .map(|resource| format_resources(num_scale, recipe, resource))
+        .collect::<Vec<String>>()
+        .join(" + ");
 
-    print!("-> ");
-
-    recipe
+    let results_string = recipe
         .results
         .iter()
-        .for_each(|resource| match resource.resource_type {
-            ResourceType::Direct(cargo) => print!(
-                "{:.6} * {}_{} + ",
-                num_scale * resource.num / recipe.time,
-                item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
-                cargo.level
-            ),
-            ResourceType::Indirect(indirect_resource) => match indirect_resource {
-                dspcalc::dsp::item::IndirectResource::Power => {
-                    print!(
-                        "{:.6} MW",
-                        sec_from_tick(num_scale * resource.num / recipe.time)
-                    );
-                }
-                dspcalc::dsp::item::IndirectResource::Area => todo!(),
-            },
-        });
+        .map(|resource| format_resources(num_scale, recipe, resource))
+        .collect::<Vec<String>>()
+        .join(" + ");
 
-    println!();
+    format!("{decision},{num_scale:.6?},{recipe_time:.6?},{items_string} -> {results_string}")
+}
+
+fn format_resources(num_scale: f64, recipe: &Recipe, resource: &Resource) -> String {
+    match resource.resource_type {
+        ResourceType::Direct(cargo) => format!(
+            "{:.6} * {}_{}",
+            tick_from_min(num_scale * resource.num / recipe.time),
+            item_name(cargo.item_id).unwrap_or(format!("ItemID{}", cargo.item_id)),
+            cargo.level
+        ),
+        ResourceType::Indirect(indirect_resource) => match indirect_resource {
+            dspcalc::dsp::item::IndirectResource::Power => {
+                format!(
+                    "{:.6} MW",
+                    tick_from_sec(num_scale * resource.num / recipe.time)
+                )
+            }
+            dspcalc::dsp::item::IndirectResource::Area => todo!(),
+        },
+    }
 }
 
 struct Config {
@@ -120,9 +118,7 @@ fn main() -> Result<(), DspCalError> {
 
     // 输出
     let price = solutions.iter().map(|a| a.num).sum::<f64>();
-    for solution in solutions {
-        print_recipe(solution.num, &solution.recipe);
-    }
+    print_recipes(solutions);
     print!("总成本：{price}");
 
     Ok(())
