@@ -30,14 +30,7 @@ impl Recipe {
             .items
             .iter()
             .zip(recipe_item.item_counts.iter())
-            .map(|(item, count)| Resource {
-                resource_type: ResourceType::Direct(Cargo {
-                    item_id: *item,
-                    level: items_level,
-                }),
-                #[allow(clippy::cast_precision_loss)]
-                num: *count as f64,
-            })
+            .map(|(item, count)| Resource::from_item_level(*item, items_level, *count as f64))
             .chain(std::iter::once(power))
             .collect();
 
@@ -45,13 +38,8 @@ impl Recipe {
             .results
             .iter()
             .zip(recipe_item.result_counts.iter())
-            .map(|(res, count)| Resource {
-                resource_type: ResourceType::Direct(Cargo {
-                    item_id: *res,
-                    level: 0,
-                }),
-                #[allow(clippy::cast_precision_loss)]
-                num: modify_result_num(*count as f64),
+            .map(|(result, count)| {
+                Resource::from_item_level(*result, 0, modify_result_num(*count as f64))
             })
             .collect();
 
