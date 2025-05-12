@@ -10,7 +10,7 @@ name = "dspcalc"
 path = "src/lib.rs"
 
 [dependencies]
-good_lp = { version = "1.12.0", features = [
+good_lp = { version = "1.13.0", features = [
     "clarabel",
 ], default-features = false }
 num = "0.4.3"

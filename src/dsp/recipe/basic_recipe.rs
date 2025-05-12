@@ -7,11 +7,7 @@ use dspdb::recipe::RecipeItem;
 
 use super::{ProliferatorType, Recipe, RecipeFmtInfo};
 use crate::{
-    dsp::{
-        building::BuildingType,
-        item::{Cargo, Resource, ResourceType},
-        proliferator::Proliferator,
-    },
+    dsp::{building::BuildingType, item::Resource, proliferator::Proliferator},
     error::DspCalError,
 };
 
