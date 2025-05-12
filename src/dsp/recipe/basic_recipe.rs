@@ -22,6 +22,8 @@ impl Recipe {
     ) -> Result<Self, DspCalError> {
         let power = Resource::power(get_building_type(recipe_item)?.power() * power_scale);
 
+        // 这里确实存在count转换成f64丢失精度的问题，虽然几乎没有可能发生，除非count是非常离谱的数值
+
         let items: Vec<_> = recipe_item
             .items
             .iter()

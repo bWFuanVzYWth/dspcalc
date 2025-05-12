@@ -76,6 +76,7 @@ pub fn print_recipe(num_scale: f64, recipe: &Recipe) {
 }
 
 struct Config {
+    /// 是否摇匀
     cocktail: bool,
 }
 
@@ -86,37 +87,18 @@ fn main() -> Result<(), DspCalError> {
     let raw_recipes = dspdb::recipe::recipes_data();
     let raw_items = dspdb::item::items_data();
 
-    // FIXME dspdb的一些公式的生产有问题
-    // FIXME 重氢，光子，电池：不是原矿，但是有公式生产
-    // TODO 接入禁用公式列表（直接移除对应的约束）
-    // TODO 增加真正的原矿化（直接移除相关的公式）
-
-    // 设置
+    // 求解方式，暂时只有是否摇匀
     let config = Config { cocktail: true };
 
     // 生成所有的公式
-    let powers = Recipe::powers();
-    let mines = Recipe::mines(&raw_items);
-    let photons = Recipe::photons();
-    let flatten_basic_recipes = Recipe::flatten_recipes(&raw_recipes, &raw_items, config.cocktail)?;
-    let proliferator_recipes = Recipe::proliferator_recipes(&raw_items, config.cocktail);
     let recipes = [
-        powers,
-        flatten_basic_recipes,
-        proliferator_recipes,
-        mines,
-        photons,
+        Recipe::powers(),
+        Recipe::flatten_recipes(&raw_recipes, &raw_items, config.cocktail)?,
+        Recipe::proliferator_recipes(&raw_items, config.cocktail),
+        Recipe::mines(&raw_items),
+        Recipe::photons(),
     ]
     .concat();
-
-    // for recipe in &recipes {
-    //     print_recipe(1.0, recipe, &raw_items);
-    // }
-
-    // let weights: Vec<_> = recipes
-    //     .iter()
-    //     .map(|recipe| recipe.info.building_type.area())
-    //     .collect();
 
     let weights: Vec<_> = recipes
         .iter()
@@ -145,6 +127,11 @@ fn main() -> Result<(), DspCalError> {
 
     Ok(())
 }
+
+// FIXME dspdb的一些公式的生产有问题
+// FIXME 重氢，光子，电池：不是原矿，但是有公式生产
+// TODO 接入禁用公式列表（直接移除对应的约束）
+// TODO 增加真正的原矿化（直接移除相关的公式）
 
 // TODO 群友建议
 // 1、原矿化列表显示数量
